@@ -1,0 +1,8 @@
+#!/bin/bash
+
+for i in $( ls data/pList* );
+do
+	export PL_FNAME=$i
+	./batchscript.dlghp	
+done
+

@@ -1,0 +1,38 @@
+\begin{Desc}
+\item[Author:]DLG (David L. Green) - ONRL - \href{mailto:greendl1@ornl.gov}{\tt greendl1@ornl.gov}\end{Desc}
+\hypertarget{index_intro_sec}{}\section{Introduction}\label{index_intro_sec}
+The \hyperlink{namespacep2f}{p2f} code is really just a fancy histogram. It takes a particle list from a code like ORBIT-rf and creates a 4D distribution function for use in a continuum code like AORSA. At present it has essentially three modes. The first really is a straight up 4D histogram giving a noisy distribution. The second uses gaussian shape particles in velocity space to give smooth velocity space distributions at each point in space. The third is to distribute each particle along its orbit accoring to the percentage of bounce time giving even better statistics. Each of the methods takes longer than the previous one. Method 1 can be run on a desktop PC for one million particles in a few seconds as you would expect. Method 2 can also be run on a desktop PC, preferrably with 4 or more cores, and takes tens of minutes depending on the run parameters for one million particles. Method three requires on the order of 100 processors for tens of minutes runtime if the gaussian particle shape is used. If boxcar type shape is used (standard histogram) with orbit tracing the the runtime is shorter.\hypertarget{index_bugs}{}\section{Bugs and Feature requests}\label{index_bugs}
+Please let me know of any bugs, I am sure there are lots and lots and lots of them ;-) Also, any feature requests feel free to email me.\hypertarget{index_install_sec}{}\section{Building}\label{index_install_sec}
+Let me do it ;-)
+
+While \hyperlink{namespacep2f}{p2f} requires only a netCDF library to build, it can be tricky getting mpi, netCDF and an appropriate compiler to play nice. Usually I like to use gfortran 4.3 or pgi compilers. Some of the fortran relies on newer features and as such does not compile with some older compilers.\hypertarget{index_run_sec}{}\section{Running the code}\label{index_run_sec}
+In general I setup a scratch space with a folder for each run. Each run folder needs a \hyperlink{p2f_8nml_source}{p2f.nml} file (a fortran namelist with the run input parameters with default parameters listed in \hyperlink{namespaceread__namelist}{read\_\-namelist}) and a data/ folder containing an input gEqDsk file and particle list. The input particle list can be of type netCDF or ascii depending on its source. ORBIT-rf particle lists are ascii while DLG created or modified particle lists are netCDF in general.
+
+Since the code was designed to be compiled and run under mpi there are several batchscripts available for running on local machines, clusters and supercomputers. These are the batchscript.$\ast$ files.\hypertarget{index_input_formats}{}\section{Particle list formats}\label{index_input_formats}
+\hypertarget{index_example_run}{}\section{Example run}\label{index_example_run}
+See the example/ folder for an example.
+
+On Benten.gat.com run the batchscript.benten file by typing
+
+./batchscript.benten
+
+This will run the C-Mod test case on 8 cores. There are two partilce list files in the example/data/ folder, one is a netCdf, the dlg\_\-mod\_\-list.nc, and the other is an output of ORBIT-rf, the fdis\_\-cmod\_\-t1msec\_\-2keV file. This was provided by Myunghee Choi at GA.
+
+After running there will be a short sanity check summary printed, something like
+
+Time taken: 9.7505198
+
+Wall: 0.00\%
+
+Bad: 0.00\%
+
+off\_\-vGrid: 0.05\% $\ast$$\ast$$\ast$ only applicable for gParticle = .false.
+
+badWeight: 0.00\%
+
+Suggested eNorm: 44.1 keV
+
+max ( density ): 0.19E+20
+
+If ANY of the Wall, Bad, off\_\-vGrid or badWeight are greater than 1\% the run parameters will need to be altered. \hypertarget{index_output_stuff}{}\section{Outputs}\label{index_output_stuff}
+\hypertarget{index_post_proc}{}\section{Visualising results with IDL}\label{index_post_proc}

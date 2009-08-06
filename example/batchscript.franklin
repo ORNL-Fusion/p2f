@@ -1,0 +1,17 @@
+
+#PBS -N p2f 
+#PBS -A m77
+#PBS -m e
+#PBS -j oe
+#PBS -l walltime=0:30:00
+#PBS -l mppwidth=100
+#PBS -q debug
+
+
+cd $PBS_O_WORKDIR
+cp $HOME/p2f/data/grfont.dat.franklin grfont.dat
+cp $HOME/p2f/data/davect.tbl data/
+rm p2f.o*
+
+aprun -n 100 $HOME/p2f/xp2f.franklin  > running.log 2>&1
+

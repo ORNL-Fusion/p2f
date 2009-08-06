@@ -1,0 +1,2 @@
+#/bin/bash
+rsync -avzL --exclude '*.mod' --exclude '*.o' --exclude '*.ps' --exclude '*.eps' ~/code/p2f/ dg6@jaguar.ccs.ornl.gov:~/p2f 

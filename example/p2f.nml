@@ -1,0 +1,26 @@
+!< \file p2f.nml
+!! The p2f.nml file is the input fortran namelist. The default variables are set in read_namelist
+!>
+
+&P2FIN
+nP = 1000000
+gParticle = .false.
+particleSize = 2.5e-04
+pl_fileName = 'data/dlg_mod_list.nc'
+eqdsk_fileName = 'data/g129x129_1051206002.01120.cmod'
+vPerInRange = 1.0
+vParInRange = 0.5
+vPerp_nBins = 16 
+vPar_nBins = 32 
+R_nBins = 30 
+z_nBins = 30 
+amu = 1.0
+NFO = .true.
+noAveraging = .true.
+pList_is_nCDF = .true.
+sR = 20 
+weightLimit = 5.0e18
+plotOrbit = .false.
+traceStepLength = 0.002
+usePtsPerTrack = 50 
+/

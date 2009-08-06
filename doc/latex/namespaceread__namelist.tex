@@ -1,0 +1,132 @@
+\hypertarget{namespaceread__namelist}{
+\section{read\_\-namelist Module Reference}
+\label{namespaceread__namelist}\index{read\_\-namelist@{read\_\-namelist}}
+}
+Namelist defaults.  
+
+
+\subsection*{Functions/Subroutines}
+\begin{CompactItemize}
+\item 
+\hypertarget{namespaceread__namelist_1dca9017a80a97235e743599d27454ae}{
+subroutine \textbf{init\_\-namelist}}
+\label{namespaceread__namelist_1dca9017a80a97235e743599d27454ae}
+
+\end{CompactItemize}
+\subsection*{Variables}
+\begin{CompactItemize}
+\item 
+\hypertarget{namespaceread__namelist_27d7daada32b7b99599cf00e25db306a}{
+integer, parameter \textbf{LONG} = selected\_\-int\_\-kind(9)}
+\label{namespaceread__namelist_27d7daada32b7b99599cf00e25db306a}
+
+\item 
+\hypertarget{namespaceread__namelist_547b2176c8609085ef49086c6a21d2ec}{
+integer(kind=LONG) \hyperlink{namespaceread__namelist_547b2176c8609085ef49086c6a21d2ec}{nP} = 1000}
+\label{namespaceread__namelist_547b2176c8609085ef49086c6a21d2ec}
+
+\begin{CompactList}\small\item\em Number of particles to use. \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_51479be8474c6d291af2a46b8331aaea}{
+real \hyperlink{namespaceread__namelist_51479be8474c6d291af2a46b8331aaea}{particleSize} = 10.0e-04}
+\label{namespaceread__namelist_51479be8474c6d291af2a46b8331aaea}
+
+\begin{CompactList}\small\item\em Gaussian particle size in \%c. \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_b9e1c6830267da5645449b24067d0027}{
+logical \hyperlink{namespaceread__namelist_b9e1c6830267da5645449b24067d0027}{gParticle} = .false.}
+\label{namespaceread__namelist_b9e1c6830267da5645449b24067d0027}
+
+\begin{CompactList}\small\item\em Use gaussian particle shape or not. \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_d419f56fadc9ca0868e70587f88a388f}{
+character(len=100) \hyperlink{namespaceread__namelist_d419f56fadc9ca0868e70587f88a388f}{pl\_\-fileName}}
+\label{namespaceread__namelist_d419f56fadc9ca0868e70587f88a388f}
+
+\begin{CompactList}\small\item\em Input particle list filename. \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_fd515ec3f58c51427343e97ef1ee4eab}{
+character(len=100) \hyperlink{namespaceread__namelist_fd515ec3f58c51427343e97ef1ee4eab}{eqdsk\_\-fileName}}
+\label{namespaceread__namelist_fd515ec3f58c51427343e97ef1ee4eab}
+
+\begin{CompactList}\small\item\em Input gEqDsk filename. \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_c6eb7f3fd517c3e45d4611790a20ab62}{
+real \hyperlink{namespaceread__namelist_c6eb7f3fd517c3e45d4611790a20ab62}{vPerInRange} = 2.0}
+\label{namespaceread__namelist_c6eb7f3fd517c3e45d4611790a20ab62}
+
+\begin{CompactList}\small\item\em vPer grid range in \%c \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_b4f33b7bb7e8451ee4d78035bc61a30a}{
+real \hyperlink{namespaceread__namelist_b4f33b7bb7e8451ee4d78035bc61a30a}{vParInRange} = 2.0}
+\label{namespaceread__namelist_b4f33b7bb7e8451ee4d78035bc61a30a}
+
+\begin{CompactList}\small\item\em vPar grid range in \%c \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_33cc65d585813b00097fe76d32b80df8}{
+integer \hyperlink{namespaceread__namelist_33cc65d585813b00097fe76d32b80df8}{sR} = 6}
+\label{namespaceread__namelist_33cc65d585813b00097fe76d32b80df8}
+
+\begin{CompactList}\small\item\em Number of grid points to span with gaussian. Note: choosing a value to small may give discontiuities for large particleSize values. \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_24c9a9421067413f4e93c64af895b5c0}{
+integer \hyperlink{namespaceread__namelist_24c9a9421067413f4e93c64af895b5c0}{R\_\-nBins} = 10}
+\label{namespaceread__namelist_24c9a9421067413f4e93c64af895b5c0}
+
+\begin{CompactList}\small\item\em Number of bins in R (Major radius). \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_6b9bbaddd44e50bea5095f432add377f}{
+integer \hyperlink{namespaceread__namelist_6b9bbaddd44e50bea5095f432add377f}{z\_\-nBins} = 20}
+\label{namespaceread__namelist_6b9bbaddd44e50bea5095f432add377f}
+
+\begin{CompactList}\small\item\em Number of bins in z (Vertical). \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_2f42d52d927cc50dc809082b1a8aba59}{
+integer \hyperlink{namespaceread__namelist_2f42d52d927cc50dc809082b1a8aba59}{vPerp\_\-nBins} = 64}
+\label{namespaceread__namelist_2f42d52d927cc50dc809082b1a8aba59}
+
+\begin{CompactList}\small\item\em Number of vPer bins. Note: set this value low ($\sim$16) when gParticle = .false. \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_2a3d96bd7488590aa34bc912bb12d956}{
+integer \hyperlink{namespaceread__namelist_2a3d96bd7488590aa34bc912bb12d956}{vPar\_\-nBins} = 128}
+\label{namespaceread__namelist_2a3d96bd7488590aa34bc912bb12d956}
+
+\begin{CompactList}\small\item\em Number of vPar bins. Note: set this value low ($\sim$32) when gParticle = .false. \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_c93f0e7fb65a49022b0de91021a97a48}{
+real \hyperlink{namespaceread__namelist_c93f0e7fb65a49022b0de91021a97a48}{amu} = 1.0}
+\label{namespaceread__namelist_c93f0e7fb65a49022b0de91021a97a48}
+
+\begin{CompactList}\small\item\em 1.0 for H, 2.0 for D, etc ... \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_5b0d13f009c3fb69e62d4ad46eba1ef0}{
+logical \hyperlink{namespaceread__namelist_5b0d13f009c3fb69e62d4ad46eba1ef0}{plotOrbit} = .false.}
+\label{namespaceread__namelist_5b0d13f009c3fb69e62d4ad46eba1ef0}
+
+\begin{CompactList}\small\item\em Use DISLIN to plot the orbits when noAveraging = .false. but this only works on dlg-hp now and is primarily for debugging. So leave it off. \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_ab9e7a4d953b0d80427d57f99d976afc}{
+logical \hyperlink{namespaceread__namelist_ab9e7a4d953b0d80427d57f99d976afc}{NFO} = .false.}
+\label{namespaceread__namelist_ab9e7a4d953b0d80427d57f99d976afc}
+
+\begin{CompactList}\small\item\em Compute orbits without finite orbits. \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_492e6bd5717c893cd13d8f26583fb26b}{
+logical \hyperlink{namespaceread__namelist_492e6bd5717c893cd13d8f26583fb26b}{noAveraging} = .false.}
+\label{namespaceread__namelist_492e6bd5717c893cd13d8f26583fb26b}
+
+\begin{CompactList}\small\item\em No orbit averaging, just particles where they are. \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_748175de2b43e11e3386c204cd04fb58}{
+logical \hyperlink{namespaceread__namelist_748175de2b43e11e3386c204cd04fb58}{pList\_\-is\_\-nCDF} = .true.}
+\label{namespaceread__namelist_748175de2b43e11e3386c204cd04fb58}
+
+\begin{CompactList}\small\item\em If using a DLG netCDF input particle list set this. This is used in the sMC-rf code or when re-mapping the ORBIT-rf output on a high resolution sMap grid. \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_bf828558912f2f900d4ed8a0498e776a}{
+real \hyperlink{namespaceread__namelist_bf828558912f2f900d4ed8a0498e776a}{weightLimit} = 1.1e18}
+\label{namespaceread__namelist_bf828558912f2f900d4ed8a0498e776a}
+
+\begin{CompactList}\small\item\em If the particle weight is above this number the particle is ignored. \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_cc063dbf0644b646f454f3a426c4176e}{
+real \hyperlink{namespaceread__namelist_cc063dbf0644b646f454f3a426c4176e}{traceStepLength} = 0.002}
+\label{namespaceread__namelist_cc063dbf0644b646f454f3a426c4176e}
+
+\begin{CompactList}\small\item\em Approximate step length \mbox{[}m\mbox{]} of integrator in m. \item\end{CompactList}\item 
+\hypertarget{namespaceread__namelist_6a4ce56f8146141d9f0d1a1a019b7edb}{
+integer \hyperlink{namespaceread__namelist_6a4ce56f8146141d9f0d1a1a019b7edb}{usePtsPerTrack} = 50}
+\label{namespaceread__namelist_6a4ce56f8146141d9f0d1a1a019b7edb}
+
+\begin{CompactList}\small\item\em Approximate number of points to use from each track in the orbit averaging. \item\end{CompactList}\end{CompactItemize}
+
+
+\subsection{Detailed Description}
+Namelist defaults. 
+
+\begin{Desc}
+\item[Author:]DLG \end{Desc}
+
+
