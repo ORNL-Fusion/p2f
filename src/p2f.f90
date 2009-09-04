@@ -21,7 +21,7 @@ program p2f
     real :: T1, T2
     integer :: mpi_count
     integer :: nP_wall_total, nP_bad_total, &
-        nP_off_vGrid_total, nP_badWeight_total
+        nP_off_vGrid_total, nP_badWeight_total, nP_badEnergy_total
     real :: tmpDensity !< Test description
 
     call init_namelist () !< Read in namelist variables from p2f.nml
@@ -67,6 +67,9 @@ program p2f
         0, MPI_COMM_WORLD, mpi_iErr )
     call mpi_reduce ( nP_badWeight, nP_badWeight_total, 1, MPI_INTEGER, MPI_SUM, &
         0, MPI_COMM_WORLD, mpi_iErr )
+    call mpi_reduce ( nP_badEnergy, nP_badEnergy_total, 1, MPI_INTEGER, MPI_SUM, &
+        0, MPI_COMM_WORLD, mpi_iErr )
+
 
     ! Test the reduction operation
 
@@ -78,11 +81,12 @@ program p2f
 
 
         write (*,*) 'Time taken: ', T2-T1 
-        write (*,'(a,f4.2,a)') 'Wall:      ', real ( nP_wall_total ) / real ( nP ) * 100.0, '%'
-        write (*,'(a,f4.2,a)') 'Bad:       ', real ( nP_bad_total ) / real ( nP ) * 100.0, '%'
-        write (*,'(a,f4.2,a,a)') 'off_vGrid: ', real ( nP_off_vGrid_total ) / real ( nP ) * 100.0, '%', &
+        write (*,'(a,f5.2,a)') 'Wall:      ', real ( nP_wall_total ) / real ( nP ) * 100.0, '%'
+        write (*,'(a,f5.2,a)') 'Bad:       ', real ( nP_bad_total ) / real ( nP ) * 100.0, '%'
+        write (*,'(a,f5.2,a,a)') 'off_vGrid: ', real ( nP_off_vGrid_total ) / real ( nP ) * 100.0, '%', &
             '   *** only applicable for gParticle = .false.'
-        write (*,'(a,f4.2,a)') 'badWeight: ', real ( nP_badWeight_total ) / real ( nP ) * 100.0, '%'
+        write (*,'(a,f5.2,a)') 'badWeight: ', real ( nP_badWeight_total ) / real ( nP ) * 100.0, '%'
+        write (*,'(a,f5.2,a)') 'badEnergy: ', real ( nP_badEnergy_total ) / real ( nP ) * 100.0, '%'
         write (*,'(a,f5.1,a)') 'Suggested eNorm: ', &
             real ( maxVal ( vPerp_binCenters )**2 * 0.5 * mi / e_ / 1e3 ), ' keV'
 

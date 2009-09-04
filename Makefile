@@ -4,7 +4,7 @@ MOD = mod
 
 ifeq ($(MACHINE),dlghp)
 	HOME = /home/dg6/code
-	F90	= ${HOME}/openmpi/gnu_64/bin/mpif90 -J${MOD}/
+	F90	= ${HOME}/openmpi/gnu_64/bin/mpif90 -J${MOD}
 	WARN = -Wall -march=core2 -O3 -fbounds-check
 	DISLIN = -I ${HOME}/dislin/dislin64/gf -L ${HOME}/dislin/dislin64 -ldislin 
 	#PGPLOT = -L ${HOME}/pgplot -lpgplot -lX11

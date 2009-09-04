@@ -175,7 +175,7 @@ contains
         real :: theta, start_theta, theta_old, &
             theta_diff, theta_diff_old
         logical :: nearStart, skip_dtUpdate
-        real :: EStep
+        real :: EStep, energy
         integer :: stride
        
 #if USE_DISLIN
@@ -197,8 +197,15 @@ contains
         tau = 0.0
         var_dt  = 1
         skip_dtUpdate   = .false.
-
         weightMod   = weight
+        
+        energy  = 0.5 * mi * ( start_vPerp**2 + start_vPar**2 ) / e_ * 1d-3!  [keV]
+
+        if ( energy <= energyThreshold ) then 
+            nP_badEnergy = nP_badEnergy + 1
+            weightMod = 0.0
+        endif
+
         if ( weight > weightLimit ) then
             nP_badWeight = nP_badWeight + 1
             weightMod = 0.0

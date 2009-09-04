@@ -1,6 +1,6 @@
-pro test_hist, subSet = subSet
+pro test_hist, subSet = subSet, lowEnergy = lowEnergy
 
-	fileName	= 'fdis1-newtry'
+	fileName	= 'fdis0-newtry'
 
 	n	= file_lines ( fileName )
 
@@ -19,16 +19,30 @@ pro test_hist, subSet = subSet
 	data.R	= data.R * 1e-2
 	data.z	= data.z * 1e-2
 
-	data.E	= data.E 
 	ePar	= data.E * data.g
 	ePer	= sqrt ( data.E^2 - ePar^2 )
+	eMag	= data.E
+
+;	extract a subsect above lowEnergy
+
+	if keyword_set ( lowEnergy ) then begin
+
+		iiSubSet	= where ( eMag gt lowEnergy, iiCntE )
+		if iiCntE gt 0 then begin
+
+			ePar	= ePar[iiSubSet]
+			ePer	= ePer[iiSubSet]
+			eMag	= eMag[iiSubSet]
+	
+		endif
+
+	endif
 
 ;	extract a subset of the data if /subSet keyword is present
 
 	iiSubSet	= where ( data.R gt 1.5 and data.R lt 1.8 $
 			and data.z gt -0.05 and data.z lt 0.05, iiCnt )
 
-	eMag	= data.E
 	if iiCnt gt 0 and keyword_set ( subSet ) then begin
 		ePar	= ePar[iiSubSet]
 		ePer	= ePer[iiSubSet]

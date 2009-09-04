@@ -307,13 +307,14 @@ endif
 	oPlot, rho_binCenters, density_rho_aorsaFIT/1e19,$
 		thick = 2.0, $
 		color = 12*16-1
-	xyOuts, 0.1, 0.98, 'nLim x19: '+string(aa[0]/1e19,for='(f4.2)') $
-			+'  n0 x19: '+string(aa[1]/1e19,for='(f5.2)') $
+	xyOuts, 0.1, 0.98, 'nLim x19: '+string(aa[0]/1e19,for='(f7.5)') $
+			+'  n0 x19: '+string(aa[1]/1e19,for='(f7.5)') $
 			+'  a: '+string(aa[2],for='(f4.2)') $
 			+'  b: '+string(aa[3],for='(f4.2)'), $
 		   /norm, $
 		   color = 12*16-1, $
-		   charSize = 1.0
+		   charSize = 0.8, $
+		   font = 0
     endif else print, 'Density fit UNSUCCESSFUL'
 
 ;		plots, [0.7,0.7], [1.8,1.8], $
@@ -512,7 +513,7 @@ endif
 	if keyword_set ( linear ) then begin
 
 		nLevs	= 10
-		levels = fIndGen ( nLevs ) / nLevs *1.0d-1
+		levels = fIndGen ( nLevs ) / nLevs *7.0d-1
 		colors	= reverse ( bytScl ( levels, top = 253 ) + 1 )
 		levels[nLevs-1]	= 1000
 
@@ -520,11 +521,17 @@ endif
 	
 	loadct, 0, /silent
 
-	!p.multi = [0,R_nBins,z_nBins]
-	
+	!p.multi = [0,R_nBins+2,z_nBins+2]
+
+	plotsLeft	= (R_nBins+2)*(z_nBins+2)
+	plotsLeft	= plotsLeft - (R_nBins+2)
+
 	for j=0,z_nBins-1 do begin
+		plotsLeft = plotsLeft - 1
 		for i=0,R_nBins-1 do begin
 	
+			!p.multi = [plotsLeft,R_nBins+2,z_nBins+2]
+
 			f_vv_smooth	= reform(f_rzvv[i,j,*,*])
 
 			contourVar	= transpose ( f_vv_smooth )
@@ -549,7 +556,10 @@ endif
 				thick = 0.5, /fill
 
 			;print, i, j
+			plotsLeft = plotsLeft - 1
 		endfor	
+		plotsLeft = plotsLeft - 1
+
 	endfor	
 
 	!p.position = 0
@@ -561,6 +571,23 @@ endif
 	xyOuts, 0.98, 0.9, 'z_nBins: '+string(z_nBins,format='(i3.3)'), color = 0, /norm, align = 1.0
 	xyOuts, 0.98, 0.875, 'vPerp_nBins: '+string(vPerp_nBins,format='(i3.3)'), color = 0, /norm, align = 1.0
 	xyOuts, 0.98, 0.85, 'vPar_nBins: '+string(vPar_nBins,format='(i3.3)'), color = 0, /norm, align = 1.0
+
+	loadct, 12, /sil
+	!p.position	= [1./(R_nBins+2),1.0/(z_nBins+2),1.0-1./(R_nBins+2),1.0-1./(z_nBins+2)]
+	plot, eqdsk.rbbbs, eqdsk.zbbbs, color = 0, /noerase, thick = 5, /norm, $
+			xRange = [min(r_binEdges), max(r_binEdges)], $
+			yRange = [min(z_binEdges), max(z_binEdges)], $
+			xSty = 1, ySty = 1, /noData, $
+			xTitle = 'R [m]', $
+			yTitle = 'z [m]', $
+			xcharSize = 1.4, $
+			yCharSize = 1.4
+	
+	oPlot, eqdsk.rLim, eqdsk.zlim, color = 8*16-1, thick = 5
+	oPlot, eqdsk.rbbbs, eqdsk.zbbbs, color = 12*16-1, thick = 5
+
+
+
 
 	device, /close_file
 
@@ -809,7 +836,6 @@ set_plot, 'X'
 	
 			endif
 	endfor	
-
 	device, /close_file
 
 old_dev = !D.name
@@ -901,5 +927,6 @@ device, /close_file
 for i=1,128 do begin
 		free_lun, i
 endfor
+stop
 end
 

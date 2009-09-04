@@ -27,6 +27,7 @@ logical :: pList_is_nubeam1 = .false. !<Use a nubeam file
 real :: weightLimit = 1.1e18 !<If the particle weight is above this number the particle is ignored.
 real :: traceStepLength = 0.002 !< Approximate step length [m] of integrator in m.
 integer :: usePtsPerTrack = 50 !< Approximate number of points to use from each track in the orbit averaging.
+real :: energyThreshold = 0.0 !< [keV] lower energy limit of particles not to include
  
 namelist / P2FIN / nP,&
     gParticle, &
@@ -48,7 +49,8 @@ namelist / P2FIN / nP,&
     weightLimit, &
     traceStepLength, &
     usePtsPerTrack, &
-    pList_is_nubeam1
+    pList_is_nubeam1, &
+    energyThreshold
 
 contains
 subroutine init_namelist
