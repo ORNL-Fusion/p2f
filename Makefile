@@ -9,6 +9,9 @@ ifeq ($(MACHINE),dlghp)
 	DISLIN = -I ${HOME}/dislin/dislin64/gf -L ${HOME}/dislin/dislin64 -ldislin 
 	#PGPLOT = -L ${HOME}/pgplot -lpgplot -lX11
 	NETCDF = -I ${HOME}/netcdf/netcdf_gnu64/include -L ${HOME}/netcdf/netcdf_gnu64/lib -lnetcdf
+	OPTDIR = ${HOME}/opt
+	OPT = -I${OPTDIR}/opt/include -L${OPTDIR}/opt/lib/static -lopt-openmpi -lstdc++ -ldl
+
 endif
 ifeq ($(MACHINE),franklin)
 	F90 = ftn -module ${MOD}/
@@ -40,7 +43,7 @@ OBJECTS = ${OBJ}/eqdsk.o ${OBJ}/dlg.o ${OBJ}/fitpack.o ${OBJ}/gc_terms.o ${OBJ}/
 
 ifeq (${MACHINE},dlghp)
 p2f: ${SRC}/p2f.f90 ${OBJECTS}
-	${F90} ${SRC}/p2f.f90 -o ${EXEC} ${OBJECTS} ${WARN} ${NETCDF} ${DISLIN}
+	${F90} ${SRC}/p2f.f90 -o ${EXEC} ${OBJECTS} ${WARN} ${NETCDF} ${DISLIN} ${OPT}
 else
 p2f: ${SRC}/p2f.f90 ${OBJECTS}
 	${F90} ${SRC}/p2f.f90 -o ${EXEC} ${OBJECTS} ${WARN} ${NETCDF}
