@@ -90,7 +90,9 @@ contains
 
             end do 
 
+            !3000 format ( 7e14.6 )
             3000 format ( 7e16.6 )
+
 
             close ( unit = 8 )
 

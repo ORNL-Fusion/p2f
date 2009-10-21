@@ -22,7 +22,9 @@ function readGeqdsk, fileName, $
 	plot_ = plot_, $
 	pAngle = pAngle, $
 	half = half, $
-	reWrite = reWrite
+	reWrite = reWrite, $
+	bFactor = bFactor, $
+	bPolFactor = bPolFactor
 
 ;   Read in data from g-eqdsk file
 
@@ -77,6 +79,25 @@ if keyword_set ( half ) then begin
 
 endif
 
+if keyword_set ( bFactor ) then begin
+
+	psizr	= psizr * bFactor
+	fpol	= fpol * bFactor
+	simag	= simag * bFactor
+	sibry	= sibry * bFactor
+
+endif
+
+if keyword_set ( bPolFactor ) then begin
+
+	psizr	= psizr * bPolFactor
+	simag	= simag * bPolFactor
+	sibry	= sibry * bPolFactor
+
+endif
+
+
+
 if keyword_set ( reWrite ) then begin
 
 	openw, lun, fileName+'.dlgMod', /get_lun
@@ -95,6 +116,8 @@ if keyword_set ( reWrite ) then begin
 	printf, lun, format = f3, nbbbs, limitr
 	printf, lun, format = f2, bbbs
 	printf, lun, format = f2, lim
+
+	close, lun
 
 endif
 
@@ -122,7 +145,11 @@ print, max(bz), min(bz)
 fPol_spline = spl_init ( fluxGrid, fPol )
 
 fPolRZ  = reform ( spl_interp ( fluxGrid, fPol, fPol_spline, psizr[*] ), nW, nH )
-bPhi    = fPolRZ / rebin ( R, nW, nH )
+fPolRZ2  = reform ( interpol ( fPol, fluxGrid, (psizr[*])<max(fluxGrid) ), nW, nH )
+fPolRZ3  = reform ( interpol ( fPol, fluxGrid, psizr[*], /quad ), nW, nH )
+fPolRZ4  = reform ( interpol ( fPol, fluxGrid, psizr[*], /spli ), nW, nH )
+
+bPhi    = fPolRZ2 / rebin ( R, nW, nH )
 APhi    = -psizr / rebin ( R, nW, nH )
 
 bMag    = sqrt ( bR^2 + bPhi^2 + bz^2 )
@@ -390,6 +417,8 @@ if keyword_set ( pAngle ) then begin
 	            fStep : fStep, $
 	            R : R, $
 	            z : z, $
+				R2D : rebin ( R, nW, nH ), $
+				z2D : transpose ( rebin ( z, nH, nW ) ), $ 
 	            fluxGrid : fluxGrid, $
 	            lengthP : lengthP, $
 	            APhi : APhi, $
@@ -402,6 +431,8 @@ endif else begin
 	eqdsk   = { case_ : case_, $
 	            nW : nW, $
 	            nH : nH, $
+				idum : idum, $
+				xdum : xdum, $
 	            rDim : rdim, $
 	            zDim : zdim, $
 	            rLeft : rleft, $
@@ -438,6 +469,8 @@ endif else begin
 	            fStep : fStep, $
 	            R : R, $
 	            z : z, $
+				R2D : rebin ( R, nW, nH ), $
+				z2D : transpose ( rebin ( z, nH, nW ) ), $ 
 	            fluxGrid : fluxGrid, $
 	            APhi : APhi, $
 	            buR : buR, $
