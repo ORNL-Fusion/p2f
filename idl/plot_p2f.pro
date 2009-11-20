@@ -513,7 +513,7 @@ endif
 	if keyword_set ( linear ) then begin
 
 		nLevs	= 10
-		levels = fIndGen ( nLevs ) / nLevs *0.25d-1
+		levels = fIndGen ( nLevs ) / nLevs *0.2d-1
 		colors	= reverse ( bytScl ( levels, top = 253 ) + 1 ) * 0
 		levels[nLevs-1]	= 1000
 
