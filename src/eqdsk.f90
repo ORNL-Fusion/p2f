@@ -11,7 +11,8 @@ module eqdsk
         pres (:), ffprim (:), pprime (:), qpsi (:), &
         rbbbs (:), zbbbs (:), rlim (:), zlim (:), &
         r (:), z (:), bR(:,:), bPhi(:,:), bz(:,:), &
-        fluxGrid (:), fpolRZ(:,:), bMag(:,:)
+        fluxGrid (:), fpolRZ(:,:), bMag(:,:), &
+        fluxGrid_(:), fpol_(:)
 
 contains
     subroutine read_geqdsk ( eqdsk_fileName, plot )
@@ -36,6 +37,7 @@ contains
         open ( unit = 8, file = eqdsk_fileName, status = 'OLD' )
 
         read ( 8, 2000 ) ( case_ (i), i=1, 6 ), idum, nw, nh 
+        write(*,*) 'EQDSK header data: nw, nh', nw, nh
         read ( 8, 2020 ) rdim,zdim,rcentr,rleft,zmid 
         read ( 8, 2020 ) rmaxis,zmaxis,simag,sibry,bcentr 
         read ( 8, 2020 ) current,simag,xdum,rmaxis,xdum 
@@ -43,7 +45,8 @@ contains
         
         allocate ( fpol ( nw ), pres ( nw ), ffprim ( nw ), &
             pprime ( nw ), psizr ( nw, nh ), qpsi ( nw ), &
-            r ( nw ), z ( nh ), fluxGrid ( nw ) )
+            r ( nw ), z ( nh ), fluxGrid ( nw ), &
+            fluxGrid_(nw), fpol_(nw) )
         
         read ( 8, 2020 ) ( fpol (i), i=1, nw ) 
         read ( 8, 2020 ) ( pres (i), i=1, nw ) 
@@ -53,7 +56,7 @@ contains
         read ( 8, 2020 ) ( qpsi (i), i=1, nw ) 
         
         read ( 8, 2022 ) nbbbs,limitr 
-        
+       
         allocate ( rbbbs ( nbbbs ), zbbbs ( nbbbs ), &
             rlim ( limitr ), zlim ( limitr ) )
         
@@ -91,29 +94,40 @@ contains
                 bz(i,j)  = -bz(i,j) / r(i)
             enddo
         enddo
-       
+      
         allocate ( xp(nw), yp(nw), temp(nw), ss(nw), fpolRZ(nw,nh), yp_c(nw) ) 
-
         !   curv1 initialises the spline (fitpack.f)
 
 !        call kurv1 ( nw, fluxGrid, fpol, spl1, spln, 3, xp, yp, temp, ss, 0.0, iErr )
+
+        !   force the fluxGrid to have an ascending order
+        if ( fluxGrid(1) > fluxGrid(nw) ) then
+            write(*,*) 'NOTE:  Reversing the flux grid for curv1 (PERHAPS AN ITER EQDSK?)'
+            do i=1,nw 
+                fluxGrid_(i)    = fluxGrid(nw-i+1)
+                fpol_(i)    = fpol(nw-i+1)
+            enddo
+            fluxGrid    = fluxGrid_
+            fpol    = fpol_
+        endif
+
         call curv1 ( nw, fluxGrid, fpol, spl1, spln, 3, yp_c, temp, sigma, iErr )
- 
+
         do i=1,nw
             do j=1,nh
 
                 !   curv2 evaluates the spline (fitpack.f)
-               
                 t   =  ( psizr(i,j) - simag ) / ( sibry - simag )
                 !call kurv2 ( t, xs, ys, nw, fluxGrid, fpol, xp, yp, ss, 0.0 )
                 !fPolRZ(i,j) = ys
+               
                 fPolRZ(i,j) = curv2 ( psizr(i,j), nw, fluxGrid, fpol, &
-                    yp_c, sigma )
-                bPhi(i,j)   = fpolRZ(i,j) / r(i)
+                        yp_c, sigma )
 
+                bPhi(i,j)   = fpolRZ(i,j) / r(i)
             end do
         end do
-      
+        
 !        !   Test the fitpack interpolation
 !
 !        do i=1,nw
