@@ -14,6 +14,8 @@ module eqdsk
         fluxGrid (:), fpolRZ(:,:), bMag(:,:), &
         fluxGrid_(:), fpol_(:)
 
+    logical :: ascending_flux
+
 contains
     subroutine read_geqdsk ( eqdsk_fileName, plot )
         !use dislin
@@ -101,7 +103,10 @@ contains
 !        call kurv1 ( nw, fluxGrid, fpol, spl1, spln, 3, xp, yp, temp, ss, 0.0, iErr )
 
         !   force the fluxGrid to have an ascending order
-        if ( fluxGrid(1) > fluxGrid(nw) ) then
+        ascending_flux = .true.
+        if ( siMag > siBry ) ascending_flux = .false.
+
+        if ( .not. ascending_flux ) then
             write(*,*) 'NOTE:  Reversing the flux grid for curv1 (PERHAPS AN ITER EQDSK?)'
             do i=1,nw 
                 fluxGrid_(i)    = fluxGrid(nw-i+1)

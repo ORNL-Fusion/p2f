@@ -388,7 +388,11 @@ contains
             psi_here = surf2 ( pos(1), pos(3), nw, nh, r, z, &
                 psizr, nw, zp_psi, sigma )
 
-            if ( psi_here > sibry * 0.99 ) stillIn = .false.
+            if ( .not. ascending_flux ) then
+                if ( psi_here < sibry * 0.99 ) stillIn = .false.
+            else
+                if ( psi_here > sibry * 0.99 ) stillIn = .false.
+            endif
 
             if ( (.not. stillIn) .or. (.not. firstOrbit) .or. stepCnt >= maxSteps ) then
 
