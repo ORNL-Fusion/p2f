@@ -2,13 +2,18 @@ OBJ = obj
 SRC = src
 MOD = mod
 
+CPPFLAGS :=
+
 ifeq ($(MACHINE),dlghp)
 	HOME = /home/dg6/code
-	F90	= ${HOME}/openmpi/gnu_64/bin/mpif90 -J${MOD}
-	WARN = -Wall -march=core2 -O3 -fbounds-check
-	DISLIN = -I ${HOME}/dislin/dislin64/gf -L ${HOME}/dislin/dislin64 -ldislin 
+	F90	= mpif90 -J${MOD}
+	WARN = -Wall -O3 -fbounds-check
+	DISLINDIR = /home/dg6/code/dislin/dislin_gnu_4.7.2
+	DISLIN = -I ${DISLINDIR}/gf -L ${DISLINDIR} -ldislin 
+	CPPFLAGS += -DUSEDISLIN
 	#PGPLOT = -L ${HOME}/pgplot -lpgplot -lX11
-	NETCDF = -I ${HOME}/netcdf/netcdf_gnu64/include -L ${HOME}/netcdf/netcdf_gnu64/lib -lnetcdf
+	NETCDFDIR = /usr/lib64
+	NETCDF = -I ${NETCDFDIR}/gfortran/modules -L ${NETCDFDIR} -lnetcdf -lnetcdff
 	OPTDIR = ${HOME}/opt
 	OPT = -I${OPTDIR}/opt/include -L${OPTDIR}/opt/lib/static -lopt-openmpi -lstdc++ -ldl
 
@@ -57,7 +62,7 @@ ${MOD}/gc_integrate.mod: ${SRC}/gc_integrate.F90 ${OBJ}/gc_integrate.o
 
 ifeq ($(MACHINE),dlghp)
 ${OBJ}/gc_integrate.o: ${SRC}/gc_integrate.F90 ${MOD}/interp.mod ${MOD}/gc_terms.mod ${MOD}/rzvv_grid.mod ${MOD}/read_namelist.mod
-	${F90} -c ${SRC}/gc_integrate.F90 -DUSE_DISLIN -o ${OBJ}/gc_integrate.o ${WARN} ${DISLIN}
+	${F90} -c ${SRC}/gc_integrate.F90 ${CPPFLAGS} -o ${OBJ}/gc_integrate.o ${WARN} ${DISLIN}
 else
 ${OBJ}/gc_integrate.o: ${SRC}/gc_integrate.F90 ${MOD}/interp.mod ${MOD}/gc_terms.mod ${MOD}/rzvv_grid.mod ${MOD}/read_namelist.mod
 	${F90} -c ${SRC}/gc_integrate.F90 -o ${OBJ}/gc_integrate.o ${WARN} 

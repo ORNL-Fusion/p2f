@@ -33,7 +33,7 @@ pro plot_p2f, $
 	c   = 3.0d8
 
 	print, 'Using ', eqdsk_fileName
-	eqdsk   = readGEQDSK ( eqdsk_fileName )
+	eqdsk   = readGEQDSK ( eqdsk_fileName,/noTor )
 
 if keyword_set ( compare ) then begin
 
@@ -789,8 +789,9 @@ set_plot, 'X'
 		xsize=42, ysize = 7,xoffset=.1, yoffset=.1, /encapsul
 
 	nLevs	= 10 
-	levScale	= 1d-7
-	levels	= 10.0^fIndGen(nLevs)*levScale
+	levScale	= 1d-4
+	levels	= 2.0^fIndGen(nLevs)*levScale
+	loadct, 0
 	colors	= reverse ( bytScl ( fIndGen(nLevs), top = 253 ) + 1 ) 
 	nRpts	= n_elements(f_rzvv[*,0,0,0])
 
@@ -806,24 +807,25 @@ set_plot, 'X'
 
 			contour, transpose ( f_vv_smooth )	, $
 				vPar_binCenters / 1.0e6, vPerp_binCenters / 1.0e6, $
-				levels = levels, $
+				levels = levels, /fill,$
 				c_colors = colors, $
 				color = 0, $
 				charSize = 1, $
 				ycharSize = 2, $
 				xCharSize = 2, $
 				;xRange = [min(vPar_binCenters),max(vPar_binCenters)] / 1.0e6,$
-				xRange = [-3,3],$
+				xRange = [-4,4],$
 				yRange = [0.0,max(vPerp_binCenters)] / 1.0e6, $
 			 	xStyle = 9, $
 				yStyle = 9, $
 				xTicks = 4, $
+				title = 'R = '+string(r_binCenters[j],format='(f4.2)'), $
 				yTitle = 'vPer [m/s] x10!U6!N', $
 				xTitle = 'vPar [m/s] x10!U6!N', $
-				c_label	= levels * 0 + 1, $
+				;c_label	= levels * 0 + 1, $
 				c_charSize = 0.5, $
 				thick = 1.0, $
-				xTickFormat = '(i2)'
+				xTickFormat = '(i2)', /iso
 
 				;xyouts, 2.0, 5.0, 'R:'+string ( r_binCenters[j], for='(f5.2)' ),$
 				;	   align = 1, $
