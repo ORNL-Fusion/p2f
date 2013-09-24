@@ -14,7 +14,7 @@ module rzvv_grid
             vPar_binCenters (: )
     real :: z_min, z_max, R_min, R_max
 
-    real, allocatable :: f_rzvv (:,:,:,:)
+    real, allocatable :: f_rzvv (:,:,:,:), f_rzvv_global(:,:,:,:)
     real, allocatable :: density (:,:)
 
 contains

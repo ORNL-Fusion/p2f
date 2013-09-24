@@ -8,16 +8,22 @@ pro plot_p2f, $
 	TEMPERATURE = temperature, $
 	JACOBIAN = jacobian
 
-	if strCmp ( getEnv ( 'MACHINE' ), 'jaguar' ) then scratchDir = getEnv ( 'SYSTEM_USERDIR' )
-	if strCmp ( getEnv ( 'MACHINE' ), 'franklin' ) then scratchDir = getEnv ( 'SCRATCH' )
-	if strCmp ( getEnv ( 'MACHINE' ), 'dlghp' ) then scratchDir = '/home/dg6/scratch' 
-	if strCmp ( getEnv ( 'HOSTNAME' ), 'benten.gat.com' ) then scratchDir = '/u/greendl/scratch' 
+    spawn, 'uname -n', machine_name
+
+	if strCmp ( machine_name, 'jaguar') then scratchDir = getEnv ( 'SYSTEM_USERDIR' )
+	if strCmp ( machine_name, 'franklin' ) then scratchDir = getEnv ( 'SCRATCH' )
+	if strCmp ( machine_name, 'dlghp' ) then scratchDir = '/home/dg6/scratch' 
+	if strCmp ( machine_name, 'dlg-air' ) then scratchDir = '/home/dg6/scratch' 
+	if strCmp ( machine_name, 'benten.gat.com' ) then scratchDir = '/u/greendl/scratch' 
 
 	;fileName2	= scratchDir + '/p2f/d3d_D_Heidbrink_delta/data/fdis.dav.nc'
 	fileName2	= scratchDir + '/p2f/cmod_H_minority/2.4MW/t00_delta/data/fdis.dav.nc'
 	;eqdsk_fileName   = 'data/g129x129_1051206002.01120.cmod'
 	;eqdsk_fileName	= 'data/eqdsk.122993'
-	eqdsk_fileName	= 'data/eqdsk'
+
+	nml = p2f_read_nml('p2f.nml')
+
+	eqdsk_fileName = nml.eqdsk_fName
 
 	if keyword_set(d3d) then eqdsk_fileName	= '~/data/eqdsk/g122080.03100'
 	cql3dFileName	= 'data/cql3dData.sav'

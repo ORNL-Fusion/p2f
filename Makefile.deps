@@ -1,0 +1,42 @@
+${EXEC}: \
+		${OBJ}/gc_integrate.o \
+		${OBJ}/interp.o \
+		${OBJ}/gc_terms.o \
+		${OBJ}/rzvv_grid.o \
+		${OBJ}/read_namelist.o \
+		${OBJ}/read_particle_list.o \
+		${OBJ}/write_f_rzvv.o \
+		${OBJ}/fitpack.o \
+		${OBJ}/beselI.o \
+		${OBJ}/constants.o
+
+${OBJ}/gc_integrate.o: \
+		${OBJ}/interp.o \
+		${OBJ}/gc_terms.o \
+		${OBJ}/rzvv_grid.o \
+		${OBJ}/read_namelist.o
+
+${OBJ}/rzvv_grid.o: \
+		${OBJ}/read_namelist.o \
+		${OBJ}/read_particle_list.o
+
+${OBJ}/read_particle_list.o: \
+		${OBJ}/init_mpi.o 
+
+${OBJ}/init_mpi.o: \
+		${OBJ}/read_namelist.o
+
+${OBJ}/interp.o: \
+		${OBJ}/gc_terms.o \
+		${OBJ}/eqdsk.o
+
+${OBJ}/gc_terms.o: \
+		${OBJ}/eqdsk.o \
+		${OBJ}/constants.o
+
+${OBJ}/eqdsk.o: \
+		${OBJ}/dlg.o 
+
+${OBJ}/constants.o: \
+		${OBJ}/read_namelist.o
+

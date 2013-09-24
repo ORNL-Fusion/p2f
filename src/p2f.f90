@@ -49,32 +49,29 @@ program p2f
 
     end do
 
+
+    call mpi_barrier ( MPI_COMM_WORLD, mpi_iErr )
+
     mpi_count   = R_nBins * z_nBins * vPerp_nBins * vPar_nBins
 
-    if ( mpi_pId == 0 ) then
-        call mpi_reduce ( MPI_IN_PLACE, f_rzvv, mpi_count, MPI_REAL, MPI_SUM, &
-            0, MPI_COMM_WORLD, mpi_iErr )
-    else
-        call mpi_reduce ( f_rzvv, 0, mpi_count, MPI_REAL, MPI_SUM, &
-            0, MPI_COMM_WORLD, mpi_iErr )
-    end if
+    allocate ( f_rzvv_global ( R_nBins, z_nBins, vPerp_nBins, vPar_nBins ) )
+    call mpi_reduce ( f_rzvv, f_rzvv_global, mpi_count, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
 
-    call mpi_reduce ( nP_wall, nP_wall_total, 1, MPI_INTEGER, MPI_SUM, &
-        0, MPI_COMM_WORLD, mpi_iErr )
-    call mpi_reduce ( nP_bad, nP_bad_total, 1, MPI_INTEGER, MPI_SUM, &
-        0, MPI_COMM_WORLD, mpi_iErr )
-    call mpi_reduce ( nP_off_vGrid, nP_off_vGrid_total, 1, MPI_INTEGER, MPI_SUM, &
-        0, MPI_COMM_WORLD, mpi_iErr )
-    call mpi_reduce ( nP_badWeight, nP_badWeight_total, 1, MPI_INTEGER, MPI_SUM, &
-        0, MPI_COMM_WORLD, mpi_iErr )
-    call mpi_reduce ( nP_badEnergy, nP_badEnergy_total, 1, MPI_INTEGER, MPI_SUM, &
-        0, MPI_COMM_WORLD, mpi_iErr )
+    f_rzvv = f_rzvv_global
+    deallocate(f_rzvv_global)
 
+    call mpi_reduce ( nP_wall, nP_wall_total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
+    call mpi_reduce ( nP_bad, nP_bad_total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
+    call mpi_reduce ( nP_off_vGrid, nP_off_vGrid_total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
+    call mpi_reduce ( nP_badWeight, nP_badWeight_total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
+    call mpi_reduce ( nP_badEnergy, nP_badEnergy_total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
 
     ! Test the reduction operation
+    write (*,*) 'Stopping MPI' 
 
     call stop_mpi () 
-   
+
+    write(*,*) 'Getting CPU time'   
     call cpu_time (T2)
  
     if ( mpi_pId == 0 ) then
