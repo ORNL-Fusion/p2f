@@ -1,4 +1,6 @@
 module eqdsk
+    use init_mpi, only : mpi_pId
+
     implicit none
     save    
     character (len=10) :: case_ ( 6 )
@@ -39,7 +41,7 @@ contains
         open ( unit = 8, file = eqdsk_fileName, status = 'OLD' )
 
         read ( 8, 2000 ) ( case_ (i), i=1, 6 ), idum, nw, nh 
-        write(*,*) 'EQDSK header data: nw, nh', nw, nh
+        if(mpi_pId==1) write(*,*) 'EQDSK header data: nw, nh', nw, nh
         read ( 8, 2020 ) rdim,zdim,rcentr,rleft,zmid 
         read ( 8, 2020 ) rmaxis,zmaxis,simag,sibry,bcentr 
         read ( 8, 2020 ) current,simag,xdum,rmaxis,xdum 

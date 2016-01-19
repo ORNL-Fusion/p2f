@@ -5,6 +5,7 @@
 module read_namelist
 
 implicit none
+integer :: MaxSteps = 10000
 integer, parameter :: LONG = selected_int_kind(9)
 integer(kind=LONG) :: nP = 1000 !< Number of particles to use.
 real :: particleSize = 10.0e-04 !< Gaussian particle size in \%c. 
@@ -50,7 +51,8 @@ namelist / P2FIN / nP,&
     traceStepLength, &
     usePtsPerTrack, &
     pList_is_nubeam1, &
-    energyThreshold
+    energyThreshold, &
+    MaxSteps
 
 contains
 subroutine init_namelist

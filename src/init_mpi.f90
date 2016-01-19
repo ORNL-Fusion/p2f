@@ -10,7 +10,7 @@ module init_mpi
     !integer, parameter :: LONG = selected_int_kind(9)
     !integer(kind=LONG), parameter :: nP = 10000
     integer :: nP_wall, nP_bad, nP_off_vGrid, &
-        nP_badWeight, nP_badEnergy
+        nP_badWeight, nP_badEnergy, nP_TookMaxStepsBeforeBounce
     
 contains
     subroutine start_mpi ()
@@ -29,11 +29,10 @@ contains
         nP_off_vGrid    = 0
         nP_badWeight    = 0
         nP_badEnergy    = 0
+        nP_TookMaxStepsBeforeBounce = 0
 
-        write (*,*) 'Division: ', mpi_start_, mpi_end_
+        if(mpi_pId==1) write (*,*) 'Division: ', mpi_start_, mpi_end_
         
-        !write(*,*) 'Proc id: ', mpi_pId, ' np range: ', mpi_start_, mpi_end_
-     
     end subroutine start_mpi
     
     subroutine stop_mpi ()

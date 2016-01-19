@@ -35,6 +35,7 @@ ${OBJ}/gc_terms.o: \
 		${OBJ}/constants.o
 
 ${OBJ}/eqdsk.o: \
+        ${OBJ}/init_mpi.o \
 		${OBJ}/dlg.o 
 
 ${OBJ}/constants.o: \

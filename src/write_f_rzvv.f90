@@ -39,7 +39,8 @@ contains
             density_id
 
         integer :: plEnvLength, plEnvStatus 
-        character(len=100) :: plEnvVar
+        character(len=100) :: plEnvVar, DataDirChar
+        logical :: DataDirExists
 
         plEnvVar = 'PL_FNAME'
         call get_environment_variable ( name = plEnvVar, &
@@ -47,6 +48,11 @@ contains
             length = plEnvLength, &
             status = plEnvStatus )
 
+        inquire (file='data', direct=DataDirChar, exist=DataDirExists)
+        if(.not.DataDirExists)then
+            call system('mkdir data')
+        endif
+            
         ncFileName  = 'data/p2f_' // trim ( ncFileName(6:26) )
 
         if ( plEnvStatus .ne. 0 ) ncFileName = 'data/fdis.dav.nc' 

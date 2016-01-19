@@ -131,9 +131,9 @@ contains
             start_vPerp, start_vPar, &
             weight
         real :: weightMod
-        integer(kind=LONG), parameter :: maxSteps = 5000
+        !integer(kind=LONG), parameter :: maxSteps = 5000
         integer(kind=LONG) :: stepCnt, var_dt, i, j, ii, ss
-        real, dimension (maxSteps) :: rTrack, zTrack, &
+        real, allocatable, dimension(:) :: rTrack, zTrack, &
             vPerpTrack, vParTrack, distance, dtArray, &
             R_index, z_index, &
             vPerp_index, vPar_index, &
@@ -151,9 +151,10 @@ contains
             k3_vgc_n(3), k4_vgc_n(3), pos_(3), k1_vPar_n, &
             k2_vPar_n, k3_vPar_n, k4_vPar_n
         
-        integer, dimension (maxSteps) :: vPerp_start, vPerp_stop, &
+        integer, allocatable, dimension(:) :: vPerp_start, vPerp_stop, &
             vPar_start, vPar_stop, R_start, R_stop, &
             z_start, z_stop
+
         !integer :: sR
         
         real :: f_rzvv_update(vPerp_nBins,vPar_nBins)
@@ -190,6 +191,19 @@ contains
         
         !   Initialize variables
       
+        allocate(rTrack(MaxSteps))
+        allocate(zTrack(MaxSteps), &
+            vPerpTrack(MaxSteps), vParTrack(MaxSteps), distance(MaxSteps), dtArray(MaxSteps), &
+            R_index(MaxSteps), z_index(MaxSteps), &
+            vPerp_index(MaxSteps), vPar_index(MaxSteps), &
+            rTrack_nfo(MaxSteps), zTrack_nfo(MaxSteps), vPerpTrack_nfo(MaxSteps), &
+            vParTrack_nfo(MaxSteps))
+        allocate(vPerp_start(MaxSteps), vPerp_stop(MaxSteps), &
+            vPar_start(MaxSteps), vPar_stop(MaxSteps), R_start(MaxSteps), R_stop(MaxSteps), &
+            z_start(MaxSteps), z_stop(MaxSteps))
+
+
+
         stepCnt = 0
         firstOrbit  = .true.
         stillIn = .true.
@@ -257,7 +271,7 @@ contains
 
         dtMin   = 1.0e-9
         if ( var_dt == 1 ) then
-            dtMax   = 5.0e-6
+            dtMax   = 5.0e-7
         else 
             dtMin   = 0.0005e-7
             dtMax   = 0.05e-7
@@ -389,9 +403,9 @@ contains
                 psizr, nw, zp_psi, sigma )
 
             if ( .not. ascending_flux ) then
-                if ( psi_here < sibry * 0.99 ) stillIn = .false.
+                if ( psi_here < sibry * 0.999 ) stillIn = .false.
             else
-                if ( psi_here > sibry * 0.99 ) stillIn = .false.
+                if ( psi_here > sibry * 0.999 ) stillIn = .false.
             endif
 
             if ( (.not. stillIn) .or. (.not. firstOrbit) .or. stepCnt >= maxSteps ) then
@@ -409,16 +423,12 @@ contains
                         !   plasma boundary while the trapped/passing boundary
                         !   orbits are rare.
                            
-                        !write(*,*) 'Suspected bad trace [long], adjusting dt range'
                         stepCnt = 0
                         var_dt = 0
-                        !if ( present ( plot ) ) then
-                        !    if ( plot ) call disFin ()
-                        !endif
                         go to 10 
                     else
-                        !write(*,*) 'Finer dt did not help'
                         nP_bad  = nP_bad + 1
+                        if(FirstOrbit) nP_TookMaxStepsBeforeBounce = nP_TookMaxStepsBeforeBounce + 1
                     end if
                 end if
                 

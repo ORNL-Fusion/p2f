@@ -10,16 +10,12 @@ pro plot_p2f, $
 
     spawn, 'uname -n', machine_name
 
+	scratchDir = '/home/dg6/scratch' 
 	if strCmp ( machine_name, 'jaguar') then scratchDir = getEnv ( 'SYSTEM_USERDIR' )
 	if strCmp ( machine_name, 'franklin' ) then scratchDir = getEnv ( 'SCRATCH' )
-	if strCmp ( machine_name, 'dlghp' ) then scratchDir = '/home/dg6/scratch' 
-	if strCmp ( machine_name, 'dlg-air' ) then scratchDir = '/home/dg6/scratch' 
 	if strCmp ( machine_name, 'benten.gat.com' ) then scratchDir = '/u/greendl/scratch' 
 
-	;fileName2	= scratchDir + '/p2f/d3d_D_Heidbrink_delta/data/fdis.dav.nc'
 	fileName2	= scratchDir + '/p2f/cmod_H_minority/2.4MW/t00_delta/data/fdis.dav.nc'
-	;eqdsk_fileName   = 'data/g129x129_1051206002.01120.cmod'
-	;eqdsk_fileName	= 'data/eqdsk.122993'
 
 	nml = p2f_read_nml('p2f.nml')
 
@@ -115,6 +111,12 @@ endif
 
 	vPerp_3D	= rebin ( vPerp_binCenters, vPerp_nBins, R_nBins, z_nBins )
 	vPerp_3D	= transpose ( vPerp_3D, [1,2,0] )
+
+	vPar_3D	= rebin ( vPar_binCenters, vPar_nBins, R_nBins, z_nBins )
+	vPar_3D	= transpose ( vPar_3D, [1,2,0] )
+
+    vMag_3D = sqrt (vPerp_3D^2 + vPar_3D^2)
+
 	vPar_4D	= rebin ( vPar_binCenters, vPar_nBins, vPerp_nBins, z_nBins, R_nBins )
 	vPar_4D	= transpose ( vPar_4D, [3,2,1,0] )
 
@@ -122,6 +124,10 @@ endif
 
 	density	= total ( total ( f_rzvv, 4 ) * vPerp_3D , 3 ) * $
 		vPerp_binSize * vPar_binSize * 2.0 * !pi
+
+	temp_eV	= mi * total ( vPerp_3D^2 * total ( f_rzvv, 4 ) * vPerp_3D , 3 ) * $
+		vPerp_binSize * vPar_binSize * 2.0 * !pi / density / e_
+
 
 ;	Create nP map
 	print, 'Create nP map'
@@ -935,6 +941,12 @@ device, /close_file
 for i=1,128 do begin
 		free_lun, i
 endfor
+
+slice = n_elements(density[0,*])/2
+r = r_binCenters2d[*,slice]
+p=plot(r,density[*,slice],title='density [m^-3]')
+p=plot(r,temp_eV[*,slice],title='temp [eV]')
+
 stop
 end
 

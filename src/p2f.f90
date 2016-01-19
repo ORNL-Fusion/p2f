@@ -19,9 +19,10 @@ program p2f
     
     integer(kind=LONG) :: i,j,k
     real :: T1, T2
-    integer :: mpi_count
+    integer :: mpi_count_
     integer :: nP_wall_total, nP_bad_total, &
-        nP_off_vGrid_total, nP_badWeight_total, nP_badEnergy_total
+        nP_off_vGrid_total, nP_badWeight_total, nP_badEnergy_total, &
+        nP_TookMaxStepsBeforeBounce_total
     real :: tmpDensity !< Test description
 
     call init_namelist () !< Read in namelist variables from p2f.nml
@@ -52,10 +53,10 @@ program p2f
 
     call mpi_barrier ( MPI_COMM_WORLD, mpi_iErr )
 
-    mpi_count   = R_nBins * z_nBins * vPerp_nBins * vPar_nBins
+    mpi_count_   = R_nBins * z_nBins * vPerp_nBins * vPar_nBins
 
     allocate ( f_rzvv_global ( R_nBins, z_nBins, vPerp_nBins, vPar_nBins ) )
-    call mpi_reduce ( f_rzvv, f_rzvv_global, mpi_count, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
+    call mpi_reduce ( f_rzvv, f_rzvv_global, mpi_count_, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
 
     f_rzvv = f_rzvv_global
     deallocate(f_rzvv_global)
@@ -65,19 +66,24 @@ program p2f
     call mpi_reduce ( nP_off_vGrid, nP_off_vGrid_total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
     call mpi_reduce ( nP_badWeight, nP_badWeight_total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
     call mpi_reduce ( nP_badEnergy, nP_badEnergy_total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
+    call mpi_reduce ( nP_TookMaxStepsBeforeBounce, &
+            nP_TookMaxStepsBeforeBounce_total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
 
     ! Test the reduction operation
-    write (*,*) 'Stopping MPI' 
+    if(mpi_pId==1) write (*,*) 'Stopping MPI' 
 
     call stop_mpi () 
 
-    write(*,*) 'Getting CPU time'   
+    if(mpi_pId==1) write(*,*) 'Getting CPU time'   
     call cpu_time (T2)
  
     if ( mpi_pId == 0 ) then
 
 
         write (*,*) 'Time taken: ', T2-T1 
+        write (*,'(a,f5.2,a)') 'TookMaxStepsBeforeBounce:      ', &
+                real ( nP_TookMaxStepsBeforeBounce_total ) / real ( nP ) * 100.0, '%', &
+                '   *** this means you need a larger MaxSteps'
         write (*,'(a,f5.2,a)') 'Wall:      ', real ( nP_wall_total ) / real ( nP ) * 100.0, '%'
         write (*,'(a,f5.2,a)') 'Bad:       ', real ( nP_bad_total ) / real ( nP ) * 100.0, '%'
         write (*,'(a,f5.2,a,a)') 'off_vGrid: ', real ( nP_off_vGrid_total ) / real ( nP ) * 100.0, '%', &
