@@ -6,7 +6,7 @@ module init_mpi
  
     integer :: mpi_iErr, mpi_nProcs, mpi_pId, mpi_nP
     integer :: mpi_start_, mpi_end_, mpi_fh
-    integer :: mpi_status(MPI_STATUS_SIZE)
+    integer :: mpi_status_(MPI_STATUS_SIZE)
     !integer, parameter :: LONG = selected_int_kind(9)
     !integer(kind=LONG), parameter :: nP = 10000
     integer :: nP_wall, nP_bad, nP_off_vGrid, &
