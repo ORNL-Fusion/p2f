@@ -157,12 +157,12 @@ contains
 
         !integer :: sR
         
-        real :: f_rzvv_update(vPerp_nBins,vPar_nBins)
-        real :: f_rzvv_update2(vPerp_nBins,vPar_nBins)
-        real :: dV(vPerp_nBins,vPar_nBins), dV_
+        real(kind=dbl) :: f_rzvv_update(vPerp_nBins,vPar_nBins)
+        real(kind=dbl) :: f_rzvv_update2(vPerp_nBins,vPar_nBins)
+        real(kind=dbl) :: dV(vPerp_nBins,vPar_nBins), dV_
 
-        real :: v_sigma
-        real :: normFac, normFac_, bArg
+        real(kind=dbl) :: v_sigma
+        real(kind=dbl) :: normFac, normFac_, bArg
         real(kind=dbl) :: bessi, bF, result_D, expTerm_D 
 
         !   if you change this you need to alter
@@ -669,10 +669,9 @@ contains
                         f_rzvv_update(i,j) =  exp ( &
                                 - ( vPerp_binCenters(i)**2  &
                                 + vPar_binCenters(j)**2 ) &
-                                / ( 2.0 * v_sigma**2 ) &
-                                ) * 2.0 * pi  
+                                / ( 2d0 * v_sigma**2 ) &
+                                ) * 2d0 * pi  
                                 
-  
                         dV(i,j) = vPerp_binCenters(i) * &
                             4.0 * pi**2 * R_binSize * z_binSize * &
                             vPerp_binSize * vPar_binSize  
@@ -732,7 +731,6 @@ contains
                             !   Oh yes, this is brilliant!
 
                             phiRange    = 2.5 * v_sigma / vPerpTrack(ii)     
-                            !phiRange    = 2.5 * v_sigma / vPerp_binCenters(int(vPerp_index(ii)))
                             phi = phiBase * phiRange
                             phi0    = 0.0
 
@@ -760,9 +758,10 @@ contains
                 if ( normFac == 0 .or. tau == 0 ) then
                 
                     write (*,*) 'DLG: ERROR, normFac == 0 or tau == 0 '
-                    write (*,*) normFac, tau, minVal ( dV ), maxVal ( dV ), &
-                        minVal ( f_rzvv_update ), maxVal ( f_rzvv_update ), &
-                        rTrack (ss), ss, stepCnt, sum ( f_rzvv_update )
+                    write (*,*) normFac, normFac_, tau, v_sigma**2
+                    !write (*,*) minVal ( dV ), maxVal ( dV ), &
+                    !    minVal ( f_rzvv_update ), maxVal ( f_rzvv_update ), &
+                    !    rTrack (ss), ss, stepCnt, sum ( f_rzvv_update )
 
                 else
 

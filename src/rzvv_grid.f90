@@ -59,7 +59,6 @@ contains
         if(mpi_pId==1) write(*,*) 'z_min: ', z_min
         if(mpi_pId==1) write(*,*) 'z_max: ', z_max
 
-
         vPerp_range = vPerInRange / 100.0 * c 
         vPerp_binSize   = vPerp_range / vPerp_nBins
         vPerp_binEdges   = (/ (i*vPerp_binSize,i=0,vPerp_nBins) /)

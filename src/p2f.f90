@@ -11,7 +11,6 @@ program p2f
     use rzvv_grid
     use init_mpi
     use constants
-    !use plot
     use write_f_rzvv
     use read_namelist
  

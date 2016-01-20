@@ -3,7 +3,7 @@ SRC := src
 MOD := mod
 
 FFLAGS :=
-F90FLAGS :=
+F90FLAGS :=  
 INCLUDES :=
 LINKS :=
 

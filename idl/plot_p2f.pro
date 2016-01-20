@@ -775,82 +775,38 @@ endif
 device, /close_file
 set_plot, 'X'
 
-;;	Contour f_rho_vv
-;
-;for i=0,n_elements(rho_binCenters)-1 do begin
-;
-;	contour, transpose ( f_vv_rho[i,*,*] ), $
-;		levels = 10.0^fIndgen(12)*1d-2, $
-;		path_xy = path, path_info = info
-;	for j=0,n_elements(info.offset)-1 do begin
-;		iSurface, path[0,(info.offset)[j]:(info.offset)[j]+(info.n)[j]-1]*0+j, $
-;					path[0,(info.offset)[j]:(info.offset)[j]+(info.n)[j]-1], $
-;					path[1,(info.offset)[j]:(info.offset)[j]+(info.n)[j]-1], $
-;					/overPlot, $
-;					transparency = j*10
-;	endfor
-;
-;endfor
-	nRPlot	= 7
-	!p.multi = [0,nRPlot,1]
-	old_dev = !D.name
-	set_plot, 'ps'
-	outfname	= 'data/f_Rvv_'+file_baseName(fileName)+'.eps'
-	print, 'Write data/f_Rvv_ file'
-	device, filename=outfname, preview=0, /color, bits_per_pixel=8, $
-		xsize=42, ysize = 7,xoffset=.1, yoffset=.1, /encapsul
-
+	nRPlot	= 6
 	nLevs	= 10 
-	levScale	= 1d-4
-	levels	= 2.0^fIndGen(nLevs)*levScale
-	loadct, 0
+    base = 2
+    maxLevel = 1e-5
+	levels	= (base^fIndGen(nLevs))/((base*1d0)^nLevs)*maxLevel 
 	colors	= reverse ( bytScl ( fIndGen(nLevs), top = 253 ) + 1 ) 
 	nRpts	= n_elements(f_rzvv[*,0,0,0])
-
 	cnt = 0
+
 	for j=nRpts/2-1,nRPts-1,(nRpts/2)/nRPlot>1 do begin
 			if cnt le nRPlot-1 then begin	
-			!p.position	= [cnt*1d0/nRPlot+0.03,0.2,(cnt+1)*1d0/nRPlot,0.95]
+            current = cnt<1
 			cnt	= cnt+1
 			jII	= 	n_elements(f_rzvv[0,*,0,0])/2
-			f_vv_smooth	= reform(f_rzvv[j,jII,*,*])
-	
-			if j eq 0 then ycharSize = 1.0 else ycharSize = 0.01
+			f_vv = reform(f_rzvv[j,jII,*,*])
 
-			contour, transpose ( f_vv_smooth )	, $
+            ThisDensity = Density[j,jII]
+
+			c=contour(transpose ( f_vv )	, $
 				vPar_binCenters / 1.0e6, vPerp_binCenters / 1.0e6, $
-				levels = levels, /fill,$
-				c_colors = colors, $
-				color = 0, $
-				charSize = 1, $
-				ycharSize = 2, $
-				xCharSize = 2, $
-				;xRange = [min(vPar_binCenters),max(vPar_binCenters)] / 1.0e6,$
-				xRange = [-4,4],$
+                layout=[3,2,cnt], current=current, $
+				c_value = levels,$
+                rgb_table = 51, $
+				xRange = [-max(vPar_binCenters),max(vPar_binCenters)]/1e6,$
 				yRange = [0.0,max(vPerp_binCenters)] / 1.0e6, $
-			 	xStyle = 9, $
-				yStyle = 9, $
-				xTicks = 4, $
-				title = 'R = '+string(r_binCenters[j],format='(f4.2)'), $
+				title = 'R = '+string(r_binCenters[j],format='(f4.2)')+'  Density: '+string(ThisDensity,format='(e8.1)'), $
 				yTitle = 'vPer [m/s] x10!U6!N', $
 				xTitle = 'vPar [m/s] x10!U6!N', $
-				;c_label	= levels * 0 + 1, $
-				c_charSize = 0.5, $
-				thick = 1.0, $
-				xTickFormat = '(i2)', /iso
-
-				;xyouts, 2.0, 5.0, 'R:'+string ( r_binCenters[j], for='(f5.2)' ),$
-				;	   align = 1, $
-				;	   charSize = 1.5, $
-				;	   charThick = 3.0
-			    ;xyouts, 2.0, 4.0, 'rho:'+string ( sqrt(psi_2d[j,jII]), for='(f5.2)' ),$
-				;	   align = 1, $
-				;	   charSize = 1.5, $
-				;	   charThick = 3.0
-	
+				xTickFormat = '(i2)')
 			endif
+            
 	endfor	
-	device, /close_file
 
 old_dev = !D.name
 set_plot, 'ps'
@@ -942,6 +898,11 @@ for i=1,128 do begin
 		free_lun, i
 endfor
 
+
+
+eqdskFName = 'eqdsk'
+g=readgeqdsk(eqdskFName)
+
 slice = n_elements(density[0,*])/2
 r = r_binCenters2d[*,slice]
 z = z_binCenters2d[0,*]
@@ -949,6 +910,8 @@ z = z_binCenters2d[0,*]
 p=plot(r,density[*,slice],title='density [m^-3]')
 p=plot(r,temp_eV[*,slice],title='temp [eV]')
 c=contour(density,r,z,/fill,rgb_table=51)
+
+
 stop
 end
 
