@@ -23,6 +23,7 @@ contains
         use eqdsk
         use constants
         use read_namelist
+        use init_mpi
         implicit none
 
         integer :: i
@@ -52,6 +53,12 @@ contains
         z_binSize   = z_range / z_nBins
         z_binEdges  = (/ (i*z_binSize,i=0,z_nBins) /) + z_min
         z_binCenters    = z_binEdges(1:z_nBins) + z_binSize / 2.0
+
+        if(mpi_pId==1) write(*,*) 'R_min: ', R_min
+        if(mpi_pId==1) write(*,*) 'R_max: ', R_max
+        if(mpi_pId==1) write(*,*) 'z_min: ', z_min
+        if(mpi_pId==1) write(*,*) 'z_max: ', z_max
+
 
         vPerp_range = vPerInRange / 100.0 * c 
         vPerp_binSize   = vPerp_range / vPerp_nBins

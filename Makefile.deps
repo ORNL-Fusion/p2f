@@ -17,6 +17,7 @@ ${OBJ}/gc_integrate.o: \
 		${OBJ}/read_namelist.o
 
 ${OBJ}/rzvv_grid.o: \
+        ${OBJ}/init_mpi.o \
 		${OBJ}/read_namelist.o \
 		${OBJ}/read_particle_list.o
 

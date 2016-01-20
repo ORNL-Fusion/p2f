@@ -944,9 +944,11 @@ endfor
 
 slice = n_elements(density[0,*])/2
 r = r_binCenters2d[*,slice]
+z = z_binCenters2d[0,*]
+
 p=plot(r,density[*,slice],title='density [m^-3]')
 p=plot(r,temp_eV[*,slice],title='temp [eV]')
-
+c=contour(density,r,z,/fill,rgb_table=51)
 stop
 end
 

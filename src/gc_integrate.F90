@@ -289,45 +289,6 @@ contains
         !    end do
         !end do
 
-#if USE_DISLIN
-
-        if ( present ( plot ) .and. mpi_pId == 0 ) then 
-            if ( plot ) then  
-            
-                call scrMod ( 'REVERS' )
-                call setPag ( 'DA4P' )! nxPag = 2100, nyPag = 2970
-                call metaFl ( 'XWIN' )
-                call disIni ()
-                call winMod ( 'NONE' )
-                call erase ()
-                call noChek ()
-                call unit ( 0 )
-                call getPag ( nxPag, nyPag )
-                call axsPos ( 300, 1700 )
-                call axsLen ( 1500, 1400 )
-                call graf ( 0.5, 1.0, 0.5, 0.25, -0.25, 0.25, -0.25, 0.25 ) 
-                call noClip ()
-                call color ('BLUE')         
-                
-                nLevs   = 10 
-                levStep    = (sibry-simag)/nLevs 
-                if ( .not. allocated ( levels ) ) &
-                    allocate ( levels(nLevs) )
-                levels = (/ (i*levStep,i=0,nLevs) /)+simag
-                do i=1,nLevs
-                    call contur ( r, nw, z, nh, psizr, levels(i) ) 
-                end do
-                call color ( 'MAGENTA' )
-                call curve ( rbbbs, zbbbs, nbbbs )
-
-                call endGrf ()
-                call color ('RED' )
-                !call setGrf ( 'NONE', 'NONE', 'NONE', 'NONE' ) 
-
-            end if 
-        end if 
-#endif
-
         do 
   
             ! Include finite orbits
@@ -596,48 +557,8 @@ contains
             end if 
 
 
-#if USE_DISLIN
-           
-            !   Plot track
-
-            if ( present ( plot ) .and. mpi_pId == 0 ) then
-                if ( plot ) then  
-
-                    if ( stepCnt > 2 ) then
-
-                        call axsPos ( 300, 1700 )
-                        call axsLen ( 1500, 1400 )
-                        call color ( 'WHITE' )
-                        call graf ( 0.5, 1.0, 0.5, 0.25, -0.25, 0.25, -0.25, 0.25 ) 
-                        call color ( 'RED' )
-                        call linWid ( 5 )
-                        call curve ( rTrack(1:stepCnt-1), zTrack(1:stepCnt-1), stepCnt-1 )
-                        if ( NFO ) then 
-                            call color ( 'GREEN' )
-                            call curve ( rTrack_nfo(1:stepCnt-1), zTrack_nfo(1:stepCnt-1), stepCnt-1 )
-                        endif
-                        call linWid ( 1 )
-                        call endGrf ()
-                        call axsPos ( 300, 2600 )
-                        call axsLen ( 1500, 700 )
-                        call graf ( start_R-0.01, start_R+0.01, start_R-0.01,&
-                            0.005, start_z-0.01, start_z+0.01,start_z-0.01, 0.005 ) 
-                        call color ( 'RED' )
-                        call curve ( rTrack(1:stepCnt-1), zTrack(1:stepCnt-1), stepCnt-1 )
-                        call endGrf ()
-
-                    end if
-
-                endif
-            end if
-#endif
- 
-               
         end do
 
-        !call disFin ()
- 
-       
 11      continue
 
         !   Introduce a stride over which to select points out
@@ -671,7 +592,6 @@ contains
         if ( stillIn ) then 
         
             R_index = ( rTrack - r_min ) / R_range * R_nBins + 1
-            !z_index = ( zTrack + z_range ) / ( 2.0 * z_range ) * z_nBins + 1
             z_index = ( zTrack - z_min ) / z_range * z_nBins + 1
             vPerp_index = vPerpTrack / vPerp_range * vPerp_nBins + 1
             vPar_index  = ( vParTrack + vPar_range ) / ( 2.0 * vPar_range ) &
