@@ -1,0 +1,23 @@
+&P2FIN
+nP = 10000
+DistributeAlongOrbit = .true.
+MaxSteps = 15000,
+gParticle = .true.
+particleSize = 4.0e-04
+pl_fileName = "f.nc"
+eqdsk_fileName = "eqdsk"
+vPerInRange = 1.0
+vParInRange = 0.5
+vPer_nBins = 64 
+vPar_nBins = 128 
+R_nBins = 20 
+z_nBins = 20 
+amu = 2.0 !1.0
+NFO = .true.
+pList_is_nCDF = .true.
+nGridPtsGaussianVSpace = 20 
+weightLimit = 5.0e18
+plotOrbit = .false.
+traceStepLength = 0.002
+usePtsPerTrack = 9999
+/

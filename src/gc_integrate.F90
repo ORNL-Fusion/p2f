@@ -510,9 +510,14 @@ contains
                                int(vPer_index(ss)),int(vPar_index(ss))) + dtArray(ss) / tau * weightMod / dV_
                     
                     else
-                
+#if DEBUG_LEVEL>1  
+                        write(*,*) 'Off vPer Grid: ', vPer_index(ss), vPer_nBins
+                        write(*,*) 'Off vPar Grid: ', vPar_index(ss), vPar_nBins
+                        write(*,*) 'Off R Grid: ', R_index(ss), R_nBins
+                        write(*,*) 'Off z Grid: ', z_index(ss), z_nBins
+                        write(*,*) 'R: ', rTrack(ss), r_min, r_max, r_range 
+#endif
                         nP_off_vGrid    = nP_off_vGrid + dtArray(ss) / tau
-
                     end if
                 
                 end do
