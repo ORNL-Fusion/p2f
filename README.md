@@ -14,7 +14,7 @@ This will create a uniform (flat) density / uniform temperature (Maxwellian) par
 There are 3 smoothing options that p2f provides ...
 
 
-1. No smoothing at all, i.e., just a histogram.
+* No smoothing at all, i.e., just a histogram.
 ```
 DistributeAlongOrbit = .false.
 gParticle = .false.
@@ -41,7 +41,7 @@ Total number of particles :   9.05914e+12
 ```
 ![No smoothing](https://github.com/dlg0/p2f/blob/master/example/Cmod_case/smooth0.png)
 
-2. Distribute a particle along its guiding center orbit according to how long it spends in each velocity space bin
+* Distribute a particle along its guiding center orbit according to how long it spends in each velocity space bin
 ```
 DistributeAlongOrbit = .true.
 gParticle = .false.
@@ -66,7 +66,7 @@ Total number of particles :   8.63336e+12
 The number of total particles is LOWER here by the 4.69% that were lost due to their orbits going outside the LCFS, i.e., they should never have really been in the particle list in the first place.
 ![No smoothing](https://github.com/dlg0/p2f/blob/master/example/Cmod_case/smooth1.png)
 
-3. Distribute and use a gaussian particle shape in velocity space
+* Distribute and use a gaussian particle shape in velocity space
 ```
 DistributeAlongOrbit = .true.
 gParticle = .true.
