@@ -1,6 +1,6 @@
-pro p2f_read_particle_list
+pro p2f_read_particle_list, fName = _fName
 
-    fName = 'plist.cdf'
+	if keyword_set(_fName) then fName = _fName else fName = 'plist.cdf'
 	cdfId = ncdf_open(fName)
 
 		ncdf_varget, cdfId, 'R', r
@@ -19,8 +19,8 @@ pro p2f_read_particle_list
     MinZ = min(g.zbbbs) 
     MaxZ = max(g.zbbbs) 
 
-    nR = 10
-    nZ = 10
+    nR = 30
+    nZ = 30
 
     HistR = fIndGen(nR)/(nR-1)*(MaxR-MinR)+MinR
     HistZ = fIndGen(nZ)/(nZ-1)*(MaxZ-MinZ)+MinZ

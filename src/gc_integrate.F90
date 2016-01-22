@@ -1,14 +1,14 @@
 module gc_integrate
 
 contains
-    function dlg_gc_velocity ( pos, vPerp, vPar, NFO )
+    function dlg_gc_velocity ( pos, vPer, vPar, NFO )
         use gc_terms
         use interp
         use eqdsk
         implicit none
 
         real :: dlg_gc_velocity(3)
-        real, intent(IN) :: pos(3), vPerp, vPar
+        real, intent(IN) :: pos(3), vPer, vPar
         real :: grad_R, grad_phi, grad_z, &
             curv_R, curv_phi, curv_z, &
             unitb_R, unitb_phi, unitb_z
@@ -43,9 +43,9 @@ contains
 
         else
             
-            vgc_R   = vPar * unitb_R + vPerp**2 * grad_R + vPar**2 * curv_R 
-            vgc_phi   = vPar * unitb_phi + vPerp**2 * grad_phi + vPar**2 * curv_phi
-            vgc_z   = vPar * unitb_z + vPerp**2 * grad_z + vPar**2 * curv_z
+            vgc_R   = vPar * unitb_R + vPer**2 * grad_R + vPar**2 * curv_R 
+            vgc_phi   = vPar * unitb_phi + vPer**2 * grad_phi + vPar**2 * curv_phi
+            vgc_z   = vPar * unitb_z + vPer**2 * grad_z + vPar**2 * curv_z
 
         endif
 
@@ -53,18 +53,18 @@ contains
 
     end function dlg_gc_velocity
 
-    function dlg_vPerp ( pos, u )
+    function dlg_vPer ( pos, u )
         use constants
         implicit none
 
         real :: bHere(3),bMagHere
         real, intent(IN) :: pos(3), u
-        real :: dlg_vPerp
+        real :: dlg_vPer
 
         bHere   = dlg_interpB ( pos, bMagHere = bMagHere )
-        dlg_vPerp   = sqrt ( 2.0 * u * bMagHere / mi )
+        dlg_vPer   = sqrt ( 2.0 * u * bMagHere / mi )
 
-    end function dlg_vPerp
+    end function dlg_vPer
 
     function dlg_vPar ( pos, u )
         use constants
@@ -110,38 +110,33 @@ contains
     
     end function dlg_interpB
 
-    subroutine gc_orbit ( start_R, start_z, start_vPerp, &
+    subroutine gc_orbit ( start_R, start_z, start_vPer, &
          start_vPar, weight, plot )
         use eqdsk
         use gc_terms
         use constants
 
-#if USE_DISLIN
-        use dislin 
-#endif
-
         use interp
         use rzvv_grid
         use init_mpi
-        use read_namelist
+        use read_namelist, nGV=>nGridPtsGaussianVSpace, nGX=>nGridPtsGaussianXSpace
         implicit none
        
         integer, parameter :: dbl = selected_real_kind ( p=13, r = 200 ) 
         real, intent(IN) :: start_R, start_z,&
-            start_vPerp, start_vPar, &
+            start_vPer, start_vPar, &
             weight
         real :: weightMod
-        !integer(kind=LONG), parameter :: maxSteps = 5000
         integer(kind=LONG) :: stepCnt, var_dt, i, j, ii, ss
         real, allocatable, dimension(:) :: rTrack, zTrack, &
-            vPerpTrack, vParTrack, distance, dtArray, &
+            vPerTrack, vParTrack, distance, dtArray, &
             R_index, z_index, &
-            vPerp_index, vPar_index, &
-            rTrack_nfo, zTrack_nfo, vPerpTrack_nfo, &
+            vPer_index, vPar_index, &
+            rTrack_nfo, zTrack_nfo, vPerTrack_nfo, &
             vParTrack_nfo
         real :: tau, dTau, pos(3), &
-            u, bMagHere, bHere(3), vPerp, vPar, &
-            vgc(3), vPerp_n, vPar_n
+            u, bMagHere, bHere(3), vPer, vPar, &
+            vgc(3), vPer_n, vPar_n
         real(kind=dbl) :: dt, dtMin, dtMax
         logical :: stillIn, firstOrbit
         logical, optional, intent(IN) :: plot
@@ -151,15 +146,13 @@ contains
             k3_vgc_n(3), k4_vgc_n(3), pos_(3), k1_vPar_n, &
             k2_vPar_n, k3_vPar_n, k4_vPar_n
         
-        integer, allocatable, dimension(:) :: vPerp_start, vPerp_stop, &
-            vPar_start, vPar_stop, R_start, R_stop, &
+        integer, allocatable, dimension(:) :: vPerL, vPerR, &
+            vParL, vParR, R_start, R_stop, &
             z_start, z_stop
 
-        !integer :: sR
-        
-        real(kind=dbl) :: f_rzvv_update(vPerp_nBins,vPar_nBins)
-        real(kind=dbl) :: f_rzvv_update2(vPerp_nBins,vPar_nBins)
-        real(kind=dbl) :: dV(vPerp_nBins,vPar_nBins), dV_
+        real(kind=dbl) :: f_vv_update(vPer_nBins,vPar_nBins)
+	real(kind=dbl), allocatable :: f_rzvv_update(:,:,:,:)
+        real(kind=dbl) :: dV(vPer_nBins,vPar_nBins), dV_
 
         real(kind=dbl) :: v_sigma
         real(kind=dbl) :: normFac, normFac_, bArg
@@ -179,30 +172,18 @@ contains
         real :: EStep, energy
         integer :: stride
        
-#if USE_DISLIN
- 
-        !   Plotting variables
-    
-        integer :: nLevs, nxPag, nyPag
-        real :: levStep
-        real, allocatable :: levels(:)
-
-#endif
-        
         !   Initialize variables
       
         allocate(rTrack(MaxSteps))
         allocate(zTrack(MaxSteps), &
-            vPerpTrack(MaxSteps), vParTrack(MaxSteps), distance(MaxSteps), dtArray(MaxSteps), &
+            vPerTrack(MaxSteps), vParTrack(MaxSteps), distance(MaxSteps), dtArray(MaxSteps), &
             R_index(MaxSteps), z_index(MaxSteps), &
-            vPerp_index(MaxSteps), vPar_index(MaxSteps), &
-            rTrack_nfo(MaxSteps), zTrack_nfo(MaxSteps), vPerpTrack_nfo(MaxSteps), &
+            vPer_index(MaxSteps), vPar_index(MaxSteps), &
+            rTrack_nfo(MaxSteps), zTrack_nfo(MaxSteps), vPerTrack_nfo(MaxSteps), &
             vParTrack_nfo(MaxSteps))
-        allocate(vPerp_start(MaxSteps), vPerp_stop(MaxSteps), &
-            vPar_start(MaxSteps), vPar_stop(MaxSteps), R_start(MaxSteps), R_stop(MaxSteps), &
+        allocate(vPerL(MaxSteps), vPerR(MaxSteps), &
+            vParL(MaxSteps), vParR(MaxSteps), R_start(MaxSteps), R_stop(MaxSteps), &
             z_start(MaxSteps), z_stop(MaxSteps))
-
-
 
         stepCnt = 0
         firstOrbit  = .true.
@@ -213,7 +194,7 @@ contains
         skip_dtUpdate   = .false.
         weightMod   = weight
         
-        energy  = 0.5 * mi * ( start_vPerp**2 + start_vPar**2 ) / e_ * 1d-3!  [keV]
+        energy  = 0.5 * mi * ( start_vPer**2 + start_vPar**2 ) / e_ * 1d-3!  [keV]
 
         if ( energy <= energyThreshold ) then 
             nP_badEnergy = nP_badEnergy + 1
@@ -225,13 +206,13 @@ contains
             weightMod = 0.0
         endif
 
-        if ( noAveraging ) then
+        if (.not.DistributeAlongOrbit) then
 
             NFO = .false.
             firstOrbit = .false.
             rTrack(1) = start_R
             zTrack(1) = start_z
-            vPerpTrack(1) = start_vPerp
+            vPerTrack(1) = start_vPer
             vParTrack(1) = start_vPar
             tau    = 1.0
             dtArray(1)  = 1.0
@@ -239,12 +220,6 @@ contains
             go to 11 ! yes, i know, shutUp ;-)
 
         end if
-
-        !! Interpolation testing variables
-
-        !real, allocatable :: bR_interp(:,:)
-        !real :: b_interp(3)
-        !integer :: j
 
 10      continue
 
@@ -254,20 +229,20 @@ contains
 
         start_theta = aTan2 ( start_z - zmAxis, start_R -rmAxis ) * 180.0 / pi
 
-        vPerp   = start_vPerp
-        vPar    = start_vPar
+        vPer = start_vPer
+        vPar = start_vPar
         
         if ( NFO ) then 
 
             pos_    = pos
             vPar_n  = vPar
-            vPerp_n = vPerp
+            vPer_n = vPer
 
         endif
 
         bHere   = dlg_interpB ( pos, bMagHere = bMagHere )
 
-        u   = mi * vPerp**2 / ( 2.0 * bMagHere ) 
+        u   = mi * vPer**2 / ( 2.0 * bMagHere ) 
 
         dtMin   = 1.0e-9
         if ( var_dt == 1 ) then
@@ -279,16 +254,6 @@ contains
         
         dt  = dtMin
 
-        !!   Test the surf1/2 interpolations
-
-        !allocate ( bR_interp(nw,nh) )
-        !do i=1,nw
-        !    do j=1,nh
-        !        b_interp    = dlg_interpB ( (/ r(i), 0.0, z(j) /) )
-        !        bR_interp(i,j)  = b_interp(1)
-        !    end do
-        !end do
-
         do 
   
             ! Include finite orbits
@@ -298,23 +263,23 @@ contains
             if ( dt < dtMin ) dt = dtMin
             if ( dt > dtMax ) dt = dtMax
  
-            vPerp   = dlg_vPerp ( pos, u ) 
-            vgc = dlg_gc_velocity ( pos, vPerp, vPar )
+            vPer   = dlg_vPer ( pos, u ) 
+            vgc = dlg_gc_velocity ( pos, vPer, vPar )
             k1_vPar   = dt * dlg_vPar ( pos, u ) 
             k1_vgc  = dt * vgc
             
-            vPerp   = dlg_vPerp ( pos + k1_vgc / 2.0, u ) 
-            vgc = dlg_gc_velocity ( pos + k1_vgc / 2.0, vPerp, vPar + k1_vPar / 2.0 )
+            vPer   = dlg_vPer ( pos + k1_vgc / 2.0, u ) 
+            vgc = dlg_gc_velocity ( pos + k1_vgc / 2.0, vPer, vPar + k1_vPar / 2.0 )
             k2_vPar   = dt * dlg_vPar ( pos + k1_vgc / 2.0, u ) 
             k2_vgc  = dt * vgc
            
-            vPerp   = dlg_vPerp ( pos + k2_vgc / 2.0, u ) 
-            vgc = dlg_gc_velocity ( pos + k2_vgc / 2.0, vPerp, vPar + k2_vPar / 2.0 )
+            vPer   = dlg_vPer ( pos + k2_vgc / 2.0, u ) 
+            vgc = dlg_gc_velocity ( pos + k2_vgc / 2.0, vPer, vPar + k2_vPar / 2.0 )
             k3_vPar   = dt * dlg_vPar ( pos + k2_vgc / 2.0, u ) 
             k3_vgc  = dt * vgc
             
-            vPerp   = dlg_vPerp ( pos + k3_vgc, u ) 
-            vgc = dlg_gc_velocity ( pos + k3_vgc, vPerp, vPar + k3_vPar )
+            vPer   = dlg_vPer ( pos + k3_vgc, u ) 
+            vgc = dlg_gc_velocity ( pos + k3_vgc, vPer, vPar + k3_vPar )
             k4_vPar   = dt * dlg_vPar ( pos + k3_vgc, u ) 
             k4_vgc  = dt * vgc
            
@@ -327,23 +292,23 @@ contains
            
             ! No finite orbits 
  
-            vPerp_n   = dlg_vPerp ( pos_, u ) 
-            vgc_n = dlg_gc_velocity ( pos_, vPerp_n, vPar_n, NFO = 1 )
+            vPer_n   = dlg_vPer ( pos_, u ) 
+            vgc_n = dlg_gc_velocity ( pos_, vPer_n, vPar_n, NFO = 1 )
             k1_vPar_n   = dt * dlg_vPar ( pos_, u ) 
             k1_vgc_n  = dt * vgc_n
             
-            vPerp_n   = dlg_vPerp ( pos_ + k1_vgc_n / 2.0, u ) 
-            vgc_n = dlg_gc_velocity ( pos_ + k1_vgc_n / 2.0, vPerp_n, vPar_n + k1_vPar_n / 2.0, NFO = 1 )
+            vPer_n   = dlg_vPer ( pos_ + k1_vgc_n / 2.0, u ) 
+            vgc_n = dlg_gc_velocity ( pos_ + k1_vgc_n / 2.0, vPer_n, vPar_n + k1_vPar_n / 2.0, NFO = 1 )
             k2_vPar_n   = dt * dlg_vPar ( pos_ + k1_vgc_n / 2.0, u ) 
             k2_vgc_n  = dt * vgc_n
            
-            vPerp_n   = dlg_vPerp ( pos_ + k2_vgc_n / 2.0, u ) 
-            vgc_n = dlg_gc_velocity ( pos_ + k2_vgc_n / 2.0, vPerp_n, vPar_n + k2_vPar_n / 2.0, NFO = 1 )
+            vPer_n   = dlg_vPer ( pos_ + k2_vgc_n / 2.0, u ) 
+            vgc_n = dlg_gc_velocity ( pos_ + k2_vgc_n / 2.0, vPer_n, vPar_n + k2_vPar_n / 2.0, NFO = 1 )
             k3_vPar_n   = dt * dlg_vPar ( pos_ + k2_vgc_n / 2.0, u ) 
             k3_vgc_n  = dt * vgc_n
             
-            vPerp_n   = dlg_vPerp ( pos_ + k3_vgc_n, u ) 
-            vgc_n = dlg_gc_velocity ( pos_ + k3_vgc_n, vPerp_n, vPar_n + k3_vPar_n, NFO = 1 )
+            vPer_n   = dlg_vPer ( pos_ + k3_vgc_n, u ) 
+            vgc_n = dlg_gc_velocity ( pos_ + k3_vgc_n, vPer_n, vPar_n + k3_vPar_n, NFO = 1 )
             k4_vPar_n   = dt * dlg_vPar ( pos_ + k3_vgc_n, u ) 
             k4_vgc_n  = dt * vgc_n
            
@@ -403,13 +368,13 @@ contains
 
             rTrack(stepCnt) = pos(1)
             zTrack(stepCnt) = pos(3)
-            vPerpTrack(stepCnt) = vPerp
+            vPerTrack(stepCnt) = vPer
             vParTrack(stepCnt)  = vPar
 
             if ( NFO ) then 
                 rTrack_nfo(stepCnt) = pos_(1)
                 zTrack_nfo(stepCnt) = pos_(3)
-                vPerpTrack_nfo(stepCnt) = vPerp_n
+                vPerTrack_nfo(stepCnt) = vPer_n
                 vParTrack_nfo(stepCnt)  = vPar_n
             endif
 
@@ -446,8 +411,6 @@ contains
  
                 else
 
-                    !   New end of orbit check
-
                     theta_diff_old  = theta_diff
                     theta_diff  = theta_old - theta
                     nearStart = .false.
@@ -457,12 +420,6 @@ contains
                         sin ( theta * pi / 180.0 ) < 0.045 .and. nearStart ) &
                             firstOrbit = .false.  
 
-                    !   Old end of orbit check
-
-                    !if ( ( distance(stepCnt) - distance(stepCnt-1) ) > 0 .AND. &
-                    !    ( distance(stepCnt-1) - distance(stepCnt-2) ) < 0 .AND. &
-                    !    distance(stepCnt-1) < 0.0006  ) firstOrbit = .false.
-            
                 endif
 
             end if
@@ -482,80 +439,11 @@ contains
 
                 endif
 
-                !if ( distance(stepCnt) > 0.1 ) then
-
                 if ( lastStep .eq. lastStep .and. lastStep > 0 .and. &
                         ( .not. skip_dtUpdate ) ) &
                     dt  = traceStepLength / lastStep * dt
 
-                !skip_dtUpdate   = .false.
-
-                    !   Prevent dt from increasing faster than 10% per
-                    !   step.
-
-                    !if ( ( dt - dtArray(stepCnt) ) / dtArray(stepCnt) > 0.1) &
-                    !    dt = dtArray(stepCnt) &
-                    !        + ( dt - dtArray(stepCnt) ) / abs ( dtArray(stepCnt) - dt ) &
-                    !        * dtArray(stepCnt)*0.1
-           
-                !else
-   
-                !    if ( distance(stepCnt) > 0.01 ) then
-
-                !        dt = 0.01 / lastStep * dt
-
-                !        if ( ( dt - dtArray(stepCnt) ) / dtArray(stepCnt) > 0.1) &
-                !        dt = dtArray(stepCnt) &
-                !            + ( dt - dtArray(stepCnt) ) / abs ( dtArray(stepCnt) - dt ) &
-                !            * dtArray(stepCnt)*0.1
-                !    else
-
-                !        dt = 0.01 / lastStep * dt
-
-                !        if ( ( dt - dtArray(stepCnt) ) / dtArray(stepCnt) > 0.1) &
-                !        dt = dtArray(stepCnt) &
-                !            + ( dt - dtArray(stepCnt) ) / abs ( dtArray(stepCnt) - dt ) &
-                !            * dtArray(stepCnt)*0.1
- 
-                !    end if
- 
-                !end if
-               
-                !if ( vPerp < vPerp_range * 0.1 ) dt = dtMin
- 
-                !if ( mpi_pId == 0 ) write(*,*) mpi_pId, dt
-
-            !if ( stepCnt > 1 ) then 
-
-            !    EStep = abs ( ( vPerpTrack(stepCnt)**2 + vParTrack(stepCnt)**2 ) &
-            !        -  ( vPerpTrack(stepCnt-1)**2 + vParTrack(stepCnt-1)**2 ) ) &
-            !        / ( vPerpTrack(stepCnt-1)**2 + vParTrack(stepCnt-1)**2 )
- 
-            !    if ( EStep > 0.1e-2 .and. dt*0.5 > dtMin ) then ! do over ;-)
-       
-            !        if ( mpi_pId == 0 ) write (*,'(e8.2,3x,i3,3x,e8.2)') dt, stepCnt, eStep
-            !        tau = tau - dt 
-            !        dt = dt * 0.5
-            !        vPerp   = vPerpTrack(stepCnt-1)
-            !        vPar   = vParTrack(stepCnt-1)
-            !        pos(1)   = rTrack(stepCnt-1)
-            !        pos(3)   = zTrack(stepCnt-1)
-            !        skip_dtUpdate   = .true.
-
-            !        stepCnt = stepCnt - 1
-
-            !        !write (*,*) 'DO-OVER', dt
-
-            !        goto 12
-
-            !    endif 
-
-            !    !if ( EStep < 0.1e-6 ) dt = dt * 1.2
-
-            !endif 
-
             end if 
-
 
         end do
 
@@ -568,9 +456,15 @@ contains
 
         stride  = int ( stepCnt / usePtsPerTrack )
         if ( stride < 1 ) stride = 1
-        if ( noAveraging ) stride = 1
+        if (.not.DistributeAlongOrbit) stride = 1
+
+#if DEBUG_LEVEL>0 
+        if(mpi_pId==1) write(*,*) "Stride : ", stride
+#endif
+
         
         tau = tau / stride
+        dtArray = dtArray / stride
 
         !   Calculate f_rzvv indices and add this orbit
         !   to the f_rzvv particle count. At this point the
@@ -584,7 +478,7 @@ contains
 
             rTrack  = rTrack_nfo
             zTrack  = ztrack_nfo
-            vPerpTrack  = vPerpTrack_nfo
+            vPerTrack  = vPerTrack_nfo
             vParTrack   = vParTrack_nfo
 
         endif
@@ -593,7 +487,7 @@ contains
         
             R_index = ( rTrack - r_min ) / R_range * R_nBins + 1
             z_index = ( zTrack - z_min ) / z_range * z_nBins + 1
-            vPerp_index = vPerpTrack / vPerp_range * vPerp_nBins + 1
+            vPer_index = vPerTrack / vPer_range * vPer_nBins + 1
             vPar_index  = ( vParTrack + vPar_range ) / ( 2.0 * vPar_range ) &
                 * vPar_nBins + 1
 
@@ -603,20 +497,17 @@ contains
                     
                     if ( int(R_index(ss)) <= R_nBins .and. int(R_index(ss)) >= 1 .and. &
                         int(z_index(ss)) <= z_nBins .and. int(z_index(ss)) >= 1 .and. &
-                        int(vPerp_index(ss)) <= vPerp_nBins .and. int(vPerp_index(ss)) >= 1 .and. &
+                        int(vPer_index(ss)) <= vPer_nBins .and. int(vPer_index(ss)) >= 1 .and. &
                         int(vPar_index(ss)) <= vPar_nBins .and. int(vPar_index(ss)) >= 1 ) then 
 
-                        !dV_ = vPerpTrack(i) * rTrack(i) * &
-                        !    4.0 * pi**2 * R_binSize * z_binSize * &
-                        !    vPerp_binSize * vPar_binSize  
-                        dV_ = vPerp_binCenters(int(vPerp_index(ss))) * rTrack(ss) * &
+                        dV_ = vPer_binCenters(int(vPer_index(ss))) * rTrack(ss) * &
                             4.0 * pi**2 * R_binSize * z_binSize * &
-                            vPerp_binSize * vPar_binSize  
+                            vPer_binSize * vPar_binSize  
                    
                         f_rzvv(int(R_index(ss)),int(z_index(ss)), &
-                               int(vPerp_index(ss)),int(vPar_index(ss))) &
+                               int(vPer_index(ss)),int(vPar_index(ss))) &
                            = f_rzvv(int(R_index(ss)),int(z_index(ss)), &
-                               int(vPerp_index(ss)),int(vPar_index(ss))) + dtArray(ss) / tau * weightMod / dV_
+                               int(vPer_index(ss)),int(vPar_index(ss))) + dtArray(ss) / tau * weightMod / dV_
                     
                     else
                 
@@ -628,6 +519,14 @@ contains
 
             else
 
+                if(vPer_nBins<64.or.vPar_nBins<128)then
+                    write(*,*) 'ERROR : When using gParticle = .true. you need a fine v-space grid'
+                    write(*,*) 'Please set ...'
+                    write(*,*) 'vPer_nBins = 64'
+                    write(*,*) 'vPar_nBins = 128'
+                    stop
+                endif
+
                 !   Try adding a particle of some finite size 
                 !   described by a gaussian in 4D space
     
@@ -637,24 +536,24 @@ contains
                 !   otherwise this is prohibitavely slow. Its already a factor
                 !   of 10 slower than using the delta functions above :-(
     
-                vPerp_start = int(vPerp_index)-sR
-                where (vPerp_start < 1) vPerp_start = 1
-                vPerp_stop  = int(vPerp_index)+sR
-                where (vPerp_stop > vPerp_nBins) vPerp_stop = vPerp_nBins
+                vPerL = int(vPer_index)-nGV
+                where (vPerL < 1) vPerL = 1
+                vPerR  = int(vPer_index)+nGV
+                where (vPerR > vPer_nBins) vPerR = vPer_nBins
      
-                vPar_start = int(vPar_index)-sR
-                where (vPar_start < 1) vPar_start = 1
-                vPar_stop  = int(vPar_index)+sR
-                where (vPar_stop > vPar_nBins) vPar_stop = vPar_nBins
+                vParL = int(vPar_index)-nGV
+                where (vParL < 1) vParL = 1
+                vParR  = int(vPar_index)+nGV
+                where (vParR > vPar_nBins) vParR = vPar_nBins
      
-                R_start = int(R_index)!-sR
+                R_start = int(R_index)!-nGX
                 where (R_start < 1) R_start = 1
-                !R_stop  = int(R_index)!+sR
+                !R_stop  = int(R_index)!+nGX
                 where (R_start > R_nBins) R_start = R_nBins
 
-                z_start = int(z_index)!-sR
+                z_start = int(z_index)!-nGX
                 where (z_start < 1) z_start = 1
-                !z_stop  = int(z_index)!+sR
+                !z_stop  = int(z_index)!+nGX
                 where (z_start > z_nBins) z_start = z_nBins
 
 
@@ -662,23 +561,23 @@ contains
                 !   No bessel function required here since the
                 !   vPer offset = 0, i.e., besselI(0,0,)=1.0
   
-                f_rzvv_update = 0.0 
-                do i=1,vPerp_nBins
+                f_vv_update = 0.0 
+                do i=1,vPer_nBins
                     do j=1,vPar_nBins
                     
-                        f_rzvv_update(i,j) =  exp ( &
-                                - ( vPerp_binCenters(i)**2  &
+                        f_vv_update(i,j) =  exp ( &
+                                - ( vPer_binCenters(i)**2  &
                                 + vPar_binCenters(j)**2 ) &
                                 / ( 2d0 * v_sigma**2 ) &
                                 ) * 2d0 * pi  
                                 
-                        dV(i,j) = vPerp_binCenters(i) * &
+                        dV(i,j) = vPer_binCenters(i) * &
                             4.0 * pi**2 * R_binSize * z_binSize * &
-                            vPerp_binSize * vPar_binSize  
+                            vPer_binSize * vPar_binSize  
                     end do
                 end do
             
-                normFac_ = sum ( f_rzvv_update * dV )  
+                normFac_ = sum ( f_vv_update * dV )  
 
                 !   Setup the base phi grid in case the 
                 !   uPer offset is too large for the bessel
@@ -688,61 +587,60 @@ contains
  
                 do ii=1,stepCnt,stride          
 
-                normFac = normFac_ * rTrack(ii) 
+                normFac = normFac_ * rTrack(ii) ! not sure why this Jacobian was here?
    
-                f_rzvv_update = 0.0
-                f_rzvv_update2 = 0.0
+                f_vv_update = 0.0
 
-                do i=vPerp_start(ii),vPerp_stop(ii)
-                    do j=vPar_start(ii),vPar_stop(ii)
+                do i=vPerL(ii),vPerR(ii)
+                    do j=vParL(ii),vParR(ii)
 
                         !   If we end up with Infinity type nonsense poping up
                         !   in the distribution function I would suggest
                         !   altering this step so it does not consider particles
                         !   located outside the chosen vPer/vPar range.
  
-                        bArg    =  vPerpTrack(ii) * vPerp_binCenters(i) / v_sigma**2
+                        bArg    =  vPerTrack(ii) * vPer_binCenters(i) / v_sigma**2
 
                         if ( bArg < 650 ) then
 
                             bF = bessI ( 0, real(bArg,dbl) )
                        
                             expTerm_D   = exp ( real ( &
-                                    - ( vPerpTrack(ii)**2 + ( vParTrack(ii) - vPar_binCenters(j) )**2  &
-                                    + vPerp_binCenters(i)**2 ) &
+                                    - ( vPerTrack(ii)**2 + ( vParTrack(ii) - vPar_binCenters(j) )**2  &
+                                    + vPer_binCenters(i)**2 ) &
                                     / ( 2.0 * v_sigma**2 ) &
                                     , dbl ) ) 
                             result_D    = expTerm_D * bF * 2d0 * real(pi,dbl)
-                            f_rzvv_update(i,j)  = result_D
+                            f_vv_update(i,j)  = result_D
 
                             !   This is a catch for when the modified bessel
                             !   function returns +Infinity
 
                             if ( bF > 1d300 ) then
                               
-                                f_rzvv_update(i,j)  = 0.0 
+                                f_vv_update(i,j)  = 0.0 
  
                             end if
 
                         else    ! do the gyro angle integral the old fashioned way
 
                             !   but use an adaptive range for the phi
-                            !   integral depending on the value of vPerpTrack.
+                            !   integral depending on the value of vPerTrack.
                             !   Oh yes, this is brilliant!
 
-                            phiRange    = 2.5 * v_sigma / vPerpTrack(ii)     
+                            phiRange    = 2.5 * v_sigma / vPerTrack(ii)     
                             phi = phiBase * phiRange
                             phi0    = 0.0
 
-                            vX  = vPerp_binCenters(i) * cos ( phi )
-                            vY  = vPerp_binCenters(i) * sin ( phi )
+                            vX  = vPer_binCenters(i) * cos ( phi )
+                            vY  = vPer_binCenters(i) * sin ( phi )
                             vZ  = vPar_binCenters(j)
 
-                            vX0 = vPerpTrack(ii) * cos ( phi0 )
-                            vY0 = vPerpTrack(ii) * sin ( phi0 )
+                            vX0 = vPerTrack(ii) * cos ( phi0 )
+                            vY0 = vPerTrack(ii) * sin ( phi0 )
                             vZ0 = vParTrack(ii)
 
-                            f_rzvv_update(i,j)   = sum ( &
+                            f_vv_update(i,j)   = sum ( &
                                 exp ( -1.0 * &
                                       ( ( vX - vX0 )**2 + ( vY - vY0 )**2 + ( vZ - vZ0 )**2 ) & 
                                             / ( 2.0 * v_sigma**2 ) ) &
@@ -759,18 +657,15 @@ contains
                 
                     write (*,*) 'DLG: ERROR, normFac == 0 or tau == 0 '
                     write (*,*) normFac, normFac_, tau, v_sigma**2
-                    !write (*,*) minVal ( dV ), maxVal ( dV ), &
-                    !    minVal ( f_rzvv_update ), maxVal ( f_rzvv_update ), &
-                    !    rTrack (ss), ss, stepCnt, sum ( f_rzvv_update )
 
                 else
 
-                    f_rzvv_update   = f_rzvv_update / normFac * weightMod
+                    f_vv_update   = f_vv_update / normFac * weightMod
 
-                    f_rzvv(R_start(ii),z_start(ii),vPerp_start(ii):vPerp_stop(ii),vPar_start(ii):vPar_stop(ii))  = &
-                        f_rzvv(R_start(ii),z_start(ii),vPerp_start(ii):vPerp_stop(ii),vPar_start(ii):vPar_stop(ii)) &
+                    f_rzvv(R_start(ii),z_start(ii),vPerL(ii):vPerR(ii),vParL(ii):vParR(ii))  = &
+                        f_rzvv(R_start(ii),z_start(ii),vPerL(ii):vPerR(ii),vParL(ii):vParR(ii)) &
                         + dtArray(ii) / tau &
-                        * f_rzvv_update(vPerp_start(ii):vPerp_stop(ii),vPar_start(ii):vPar_stop(ii)) 
+                        * f_vv_update(vPerL(ii):vPerR(ii),vParL(ii):vParR(ii)) 
 
                 endif 
 

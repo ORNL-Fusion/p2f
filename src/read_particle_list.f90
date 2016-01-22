@@ -3,7 +3,7 @@ module read_particle_list
     save
 
     real, allocatable :: p_R(:), p_z(:), &
-        p_vPerp(:), p_vPar(:), p_weight(:) 
+        p_vPer(:), p_vPar(:), p_weight(:) 
    
 contains    
     subroutine read_pl ()
@@ -25,7 +25,7 @@ contains
         character(len=100) :: plEnvVar, plEnvFName
 
         allocate ( p_R(nP), p_z(nP), p_weight(nP), &
-            p_vPerp(nP), p_vPar(nP) )
+            p_vPer(nP), p_vPar(nP) )
 
             if ( pList_is_nCDF ) then 
 
@@ -72,7 +72,7 @@ contains
 
             p_R = nc_R(1:nP)
             p_z = nc_z(1:nP)
-            p_vPerp = nc_vPer(1:nP)
+            p_vPer = nc_vPer(1:nP)
             p_vPar  = nc_vPar(1:nP)
             p_weight    = nc_weight(1:nP)
 
@@ -101,11 +101,11 @@ contains
             p_R = p_R * 1e-2
             p_z = p_z * 1e-2
 
-            !   Calculate particle vPerp and vPar
+            !   Calculate particle vPer and vPar
 
             p_v = sqrt ( 2.0 * p_E * 1.0e3 * e_ / mi ) 
             p_vPar  = p_v * p_lambda
-            p_vPerp = sqrt ( p_v**2 - p_vPar**2 )
+            p_vPer = sqrt ( p_v**2 - p_vPar**2 )
 
             deallocate ( p_E, p_lambda )
 
@@ -134,11 +134,11 @@ contains
             p_R = p_R * 1e-2
             p_z = p_z * 1e-2
 
-            !   Calculate particle vPerp and vPar
+            !   Calculate particle vPer and vPar
 
             p_v = sqrt ( 2.0 * p_E * 1.0e3 * e_ / mi ) 
             p_vPar  = p_v * p_lambda
-            p_vPerp = sqrt ( p_v**2 - p_vPar**2 )
+            p_vPer = sqrt ( p_v**2 - p_vPar**2 )
 
             deallocate ( p_psi, p_E, p_lambda, p_theta )
 

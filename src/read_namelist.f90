@@ -14,15 +14,16 @@ character(len=100) :: pl_fileName = 'data/fdis_25keV_D_6_flat_D3D.dav' !<Input p
 character(len=100) :: eqdsk_fileName = 'data/g122080.03100' !<Input gEqDsk filename.
 real :: vPerInRange = 2.0 !<vPer grid range in \%c
 real :: vParInRange = 2.0 !<vPar grid range in \%c
-integer :: sR = 6 !<Number of grid points to span with gaussian. Note: choosing a value to small may give discontiuities for large particleSize values.
+integer :: nGridPtsGaussianVSpace = 6 !<Number of grid points to span half gaussian in velocity. Note: choosing a value to small may give discontiuities for large particleSize values.
+integer :: nGridPtsGaussianXSpace = 4 !<Number of grid points to span half gaussian in real space. Note: choosing a value to small may give discontiuities for large particleSize values.
 integer :: R_nBins = 10 !<Number of bins in R (Major radius).
 integer :: z_nBins = 20 !<Number of bins in z (Vertical).
-integer :: vPerp_nBins = 64 !<Number of vPer bins. Note: set this value low (~16) when gParticle = .false.
+integer :: vPer_nBins = 64 !<Number of vPer bins. Note: set this value low (~16) when gParticle = .false.
 integer :: vPar_nBins = 128 !<Number of vPar bins. Note: set this value low (~32) when gParticle = .false.
 real :: amu = 1.0 !< 1.0 for H, 2.0 for D, etc ...
-logical :: plotOrbit = .false. !<Use DISLIN to plot the orbits when noAveraging = .false. but this only works on dlg-hp now and is primarily for debugging. So leave it off.
+logical :: plotOrbit = .false. !<Use DISLIN to plot the orbits when DistributeAlongOrbit = .false. but this only works on dlg-hp now and is primarily for debugging. So leave it off.
 logical :: NFO = .false. !<Compute orbits without finite orbits.
-logical :: noAveraging = .false. !<No orbit averaging, just particles where they are.
+logical :: DistributeAlongOrbit = .false. !<No orbit averaging, just particles where they are.
 logical :: pList_is_nCDF = .true. !<If using a DLG netCDF input particle list set this. This is used in the sMC-rf code or when re-mapping the ORBIT-rf output on a high resolution sMap grid.
 logical :: pList_is_nubeam1 = .false. !<Use a nubeam file
 real :: weightLimit = 1.1e18 !<If the particle weight is above this number the particle is ignored.
@@ -37,15 +38,16 @@ namelist / P2FIN / nP,&
     eqdsk_fileName, &
     vPerInRange, &
     vParInRange, &
-    sR, &
+    nGridPtsGaussianVSpace, &
+    nGridPtsGaussianXSpace, &
     R_nBins, &
     z_nBins, &
-    vPerp_nBins, &
+    vPer_nBins, &
     vPar_nBins, &
     amu, &
     plotOrbit, &
     NFO, &
-    noAveraging, &
+    DistributeAlongOrbit, &
     pList_is_nCDF, & 
     weightLimit, &
     traceStepLength, &

@@ -42,20 +42,20 @@ if keyword_set ( compare ) then begin
 	cdfId	= ncdf_open ( fileName2, /noWrite )
 	glob	= ncdf_inquire ( cdfId )
 	ncdf_varGet, cdfId, 'f_rzvv', f_rzvv2
-	ncdf_varGet, cdfId, 'vPerp_binEdges', vPerp_binEdges2
+	ncdf_varGet, cdfId, 'vPer_binEdges', vPer_binEdges2
 	ncdf_varGet, cdfId, 'vPar_binEdges', vPar_binEdges2
-	ncdf_varGet, cdfId, 'vPerp_binCenters', vPerp_binCenters2
+	ncdf_varGet, cdfId, 'vPer_binCenters', vPer_binCenters2
 	ncdf_varGet, cdfId, 'vPar_binCenters', vPar_binCenters2
 	nCdf_varGet, cdfId, 'nP', nP2
 
 	ncdf_dimInq, cdfId, ncdf_dimId ( cdfId, 'R_nBins' ), name, R_nBins2
 	ncdf_dimInq, cdfId, ncdf_dimId ( cdfId, 'z_nBins' ), name, z_nBins2
-	ncdf_dimInq, cdfId, ncdf_dimId ( cdfId, 'vPerp_nBins' ), name, vPerp_nBins2
+	ncdf_dimInq, cdfId, ncdf_dimId ( cdfId, 'vPer_nBins' ), name, vPer_nBins2
 	ncdf_dimInq, cdfId, ncdf_dimId ( cdfId, 'vPar_nBins' ), name, vPar_nBins2
 
 	ncdf_close, cdfId
 
-	dVPer2	= abs ( vPerp_binEdges2[0] - vPerp_binEdges2[1] )
+	dVPer2	= abs ( vPer_binEdges2[0] - vPer_binEdges2[1] )
 	dVPar2	= abs ( vPar_binEdges2[0] - vPar_binEdges2[1] )
 
 endif
@@ -72,36 +72,36 @@ endif
 	ncdf_varGet, cdfId, 'f_rzvv', f_rzvv
 	ncdf_varGet, cdfId, 'R_binCenters', R_binCenters
 	ncdf_varGet, cdfId, 'z_binCenters', z_binCenters
-	ncdf_varGet, cdfId, 'vPerp_binCenters', vPerp_binCenters
+	ncdf_varGet, cdfId, 'vPer_binCenters', vPer_binCenters
 	ncdf_varGet, cdfId, 'vPar_binCenters', vPar_binCenters
 	ncdf_varGet, cdfId, 'R_binEdges', R_binEdges
 	ncdf_varGet, cdfId, 'z_binEdges', z_binEdges
-	ncdf_varGet, cdfId, 'vPerp_binEdges', vPerp_binEdges
+	ncdf_varGet, cdfId, 'vPer_binEdges', vPer_binEdges
 	ncdf_varGet, cdfId, 'vPar_binEdges', vPar_binEdges
 	ncdf_varGet, cdfId, 'nP', nP
 	ncdf_varGet, cdfId, 'R_binSize', R_binSize
 	ncdf_varGet, cdfId, 'z_binSize', z_binSize
-	ncdf_varGet, cdfId, 'vPerp_binSize', vPerp_binSize
+	ncdf_varGet, cdfId, 'vPer_binSize', vPer_binSize
 	ncdf_varGet, cdfId, 'vPar_binSize', vPar_binSize
 	ncdf_varGet, cdfId, 'density', density_file
 
 	ncdf_dimInq, cdfId, ncdf_dimId ( cdfId, 'R_nBins' ), name, R_nBins
 	ncdf_dimInq, cdfId, ncdf_dimId ( cdfId, 'z_nBins' ), name, z_nBins
-	ncdf_dimInq, cdfId, ncdf_dimId ( cdfId, 'vPerp_nBins' ), name, vPerp_nBins
+	ncdf_dimInq, cdfId, ncdf_dimId ( cdfId, 'vPer_nBins' ), name, vPer_nBins
 	ncdf_dimInq, cdfId, ncdf_dimId ( cdfId, 'vPar_nBins' ), name, vPar_nBins
 
 	ncdf_close, cdfId
 
 	R_nBins	= n_elements ( R_binCenters )
 	z_nBins	= n_elements ( z_binCenters )	
-	vPerp_nBins	= n_elements ( vPerp_binCenters )
+	vPer_nBins	= n_elements ( vPer_binCenters )
 	vPar_nBins	= n_elements ( vPar_binCenters )	
 
 if  keyword_set ( compare ) then begin
 
 	R_nBins2	= n_elements ( R_binCenters2 )
 	z_nBins2	= n_elements ( z_binCenters2 )	
-	vPerp_nBins2	= n_elements ( vPerp_binCenters2 )
+	vPer_nBins2	= n_elements ( vPer_binCenters2 )
 	vPar_nBins2	= n_elements ( vPar_binCenters2 )	
 
 endif
@@ -109,24 +109,24 @@ endif
 ;	Create a density map
 	print, 'Create density map'
 
-	vPerp_3D	= rebin ( vPerp_binCenters, vPerp_nBins, R_nBins, z_nBins )
-	vPerp_3D	= transpose ( vPerp_3D, [1,2,0] )
+	vPer_3D	= rebin ( vPer_binCenters, vPer_nBins, R_nBins, z_nBins )
+	vPer_3D	= transpose ( vPer_3D, [1,2,0] )
 
 	vPar_3D	= rebin ( vPar_binCenters, vPar_nBins, R_nBins, z_nBins )
 	vPar_3D	= transpose ( vPar_3D, [1,2,0] )
 
-    vMag_3D = sqrt (vPerp_3D^2 + vPar_3D^2)
+    vMag_3D = sqrt (vPer_3D^2 + vPar_3D^2)
 
-	vPar_4D	= rebin ( vPar_binCenters, vPar_nBins, vPerp_nBins, z_nBins, R_nBins )
+	vPar_4D	= rebin ( vPar_binCenters, vPar_nBins, vPer_nBins, z_nBins, R_nBins )
 	vPar_4D	= transpose ( vPar_4D, [3,2,1,0] )
 
 	R_2D	= rebin ( R_binCenters, R_nBins, z_nBins )
 
-	density	= total ( total ( f_rzvv, 4 ) * vPerp_3D , 3 ) * $
-		vPerp_binSize * vPar_binSize * 2.0 * !pi
+	density	= total ( total ( f_rzvv, 4 ) * vPer_3D , 3 ) * $
+		vPer_binSize * vPar_binSize * 2.0 * !pi
 
-	temp_eV	= mi * total ( vPerp_3D^2 * total ( f_rzvv, 4 ) * vPerp_3D , 3 ) * $
-		vPerp_binSize * vPar_binSize * 2.0 * !pi / density / e_
+	temp_eV	= mi * total ( vPer_3D^2 * total ( f_rzvv, 4 ) * vPer_3D , 3 ) * $
+		vPer_binSize * vPar_binSize * 2.0 * !pi / density / e_
 
 
 ;	Create nP map
@@ -137,12 +137,12 @@ endif
 ;	Create wPerp map ( perp energy PER PARTICLE )
 	print, 'Create wPerp map'
 
-	wPerp	= total ( 0.5 * mi * vPerp_3D^2 $
-						* total ( f_rzvv, 4 ) * vPerp_3D , 3 ) $
-		* vPerp_binSize * vPar_binSize * 2.0 * !pi
+	wPerp	= total ( 0.5 * mi * vPer_3D^2 $
+						* total ( f_rzvv, 4 ) * vPer_3D , 3 ) $
+		* vPer_binSize * vPar_binSize * 2.0 * !pi
 
-	wPar	= total ( total ( 0.5 * mi * vPar_4D^2 * f_rzvv, 4 ) * vPerp_3D , 3 ) $
-		* vPerp_binSize * vPar_binSize * 2.0 * !pi
+	wPar	= total ( total ( 0.5 * mi * vPar_4D^2 * f_rzvv, 4 ) * vPer_3D , 3 ) $
+		* vPer_binSize * vPar_binSize * 2.0 * !pi
 
 
 	wPerp	= wPerp / e_ * 1d-3 / density
@@ -227,7 +227,7 @@ endif
 	wperp_rho	= fltArr ( n_elements ( rho_binCenters ) )
 	wpar_rho	= fltArr ( n_elements ( rho_binCenters ) )
 
-	f_vv_rho	= fltArr ( n_elements ( rho_binCenters ), vPerp_nBins, vPar_nBins )
+	f_vv_rho	= fltArr ( n_elements ( rho_binCenters ), vPer_nBins, vPar_nBins )
 
 	for i = 0, n_elements ( rho_binCenters ) - 1 do begin
 
@@ -254,7 +254,7 @@ endif
 	nc_id	= nCdf_create ( 'data/f_rho_vv.nc', /clobber )
 	nCdf_control, nc_id, /fill
 	
-	vPer_nBins_id	= nCdf_dimDef ( nc_id, 'vPer_nBins', vPerp_nBins )
+	vPer_nBins_id	= nCdf_dimDef ( nc_id, 'vPer_nBins', vPer_nBins )
 	vPar_nBins_id	= nCdf_dimDef ( nc_id, 'vPar_nBins', vPar_nBins )
 	rho_nBins_id	= nCdf_dimDef ( nc_id, 'rho_nBins', rho_nBins )
 	
@@ -408,7 +408,7 @@ endif
 			if mean ( tmp ) gt 0 then begin
 				fit	= gauss2dFit ( tmp, A )
 				tempProfile[i,j]	= mi * ( $
-					( A[2] * vPerp_binsize )^2 + ( A[3] * vPar_binSize )^2 $
+					( A[2] * vPer_binsize )^2 + ( A[3] * vPar_binSize )^2 $
 						) / ( 2.0 * 1e3 * e_ )  
 			endif
 
@@ -502,7 +502,7 @@ endif
 ;--------------------------------------------
 
 
-	dVPer	= abs ( vPerp_binEdges[0] - vPerp_binEdges[1] )
+	dVPer	= abs ( vPer_binEdges[0] - vPer_binEdges[1] )
 	dVPar	= abs ( vPar_binEdges[0] - vPar_binEdges[1] )
 	dR	= abs ( R_binEdges[0] - R_binEdges[1] )
 	dz	= abs ( z_binEdges[0] - z_binEdges[1] )
@@ -548,17 +548,17 @@ endif
 
 			contourVar	= transpose ( f_vv_smooth )
 			if keyword_set ( jacobian ) then $
-				contourVar  = transpose ( f_vv_smooth * rebin(vPerp_binCenters,vPerp_nBins, vPar_nBins)$
-					/median(vPerp_binCenters) )
+				contourVar  = transpose ( f_vv_smooth * rebin(vPer_binCenters,vPer_nBins, vPar_nBins)$
+					/median(vPer_binCenters) )
 
 			contour, contourVar, $
-				vPar_binCenters / 3.0e6, vPerp_binCenters / 3.0e6, $
+				vPar_binCenters / 3.0e6, vPer_binCenters / 3.0e6, $
 				levels = levels, $
 				c_colors = colors, $
 				color = 0, $
 				charSize = 0.01, $
 				xRange = [min(vPar_binCenters),max(vPar_binCenters)] / 3.0e6,$
-				yRange = [0.0,max(vPerp_binCenters)] / 3.0e6, $
+				yRange = [0.0,max(vPer_binCenters)] / 3.0e6, $
 				title = 'R: '+string ( r_binCenters[i], for='(f5.2)' ) $
 					+ ' z: '+string ( z_binCenters[j], for='(f5.2)' ), $
 				xTicks = 1, $
@@ -581,7 +581,7 @@ endif
 	xyOuts, 0.98, 0.95, 'nP: '+string(nP,format='(e7.1)'), color = 0, /norm, align = 1.0
 	xyOuts, 0.98, 0.925, 'R_nBins: '+string(R_nBins,format='(i3.3)'), color = 0, /norm, align = 1.0
 	xyOuts, 0.98, 0.9, 'z_nBins: '+string(z_nBins,format='(i3.3)'), color = 0, /norm, align = 1.0
-	xyOuts, 0.98, 0.875, 'vPerp_nBins: '+string(vPerp_nBins,format='(i3.3)'), color = 0, /norm, align = 1.0
+	xyOuts, 0.98, 0.875, 'vPer_nBins: '+string(vPer_nBins,format='(i3.3)'), color = 0, /norm, align = 1.0
 	xyOuts, 0.98, 0.85, 'vPar_nBins: '+string(vPar_nBins,format='(i3.3)'), color = 0, /norm, align = 1.0
 
 	loadct, 12, /sil
@@ -625,8 +625,8 @@ if keyword_set ( compare ) then begin
 	f_vv	= reform(f_rzvv[i,j,*,*])
 	f_vv2	= reform(f_rzvv2[i,j,*,*])
 
-	vPer2D	= rebin(vPerp_binCenters,vPerp_nBins,vPar_nBins)
-	vPer2D2	= rebin(vPerp_binCenters2,vPerp_nBins2,vPar_nBins2)
+	vPer2D	= rebin(vPer_binCenters,vPer_nBins,vPar_nBins)
+	vPer2D2	= rebin(vPer_binCenters2,vPer_nBins2,vPar_nBins2)
 
 	;	Create analytical maxwellian
 
@@ -636,9 +636,9 @@ if keyword_set ( compare ) then begin
 
 	f_vv_a	= fltArr ( size ( f_vv, /dim ) )
 	
-	for i = 0, n_elements ( vPerp_binCenters ) - 1 do begin
+	for i = 0, n_elements ( vPer_binCenters ) - 1 do begin
 		for j = 0, n_elements ( vPar_binCenters ) - 1 do begin
-			v	= sqrt ( (vPerp_binCenters[i]^2) $
+			v	= sqrt ( (vPer_binCenters[i]^2) $
 					+ (vPar_binCenters[j]^2) )
 			meanV	= 0.0
 			f_vv_a[i,j]	= $
@@ -648,7 +648,7 @@ if keyword_set ( compare ) then begin
 	endfor
 	
 	f_vv_a	= densityHere * f_vv_a $
-		/ total ( f_vv_a * rebin(vPerp_binCenters,vPerp_nBins,vPar_nBins) * dVpar * dVPer * 2.0 * !Pi )
+		/ total ( f_vv_a * rebin(vPer_binCenters,vPer_nBins,vPar_nBins) * dVpar * dVPer * 2.0 * !Pi )
 
 	dfdupar	= dlg_pderiv ( f_vv, 2, dVpar )
 	dfdupar2	= dlg_pderiv ( f_vv2, 2, dVpar2 )
@@ -660,8 +660,8 @@ if keyword_set ( compare ) then begin
 
 	;	Interpoate to match grids
 	
-	nGridPer	= (vPerp_binCenters2 - min ( vPerp_binCenters )) $
-		/ ( max ( vPerp_binCenters ) - min ( vPerp_binCenters ) ) * (vPerp_nBins-1)
+	nGridPer	= (vPer_binCenters2 - min ( vPer_binCenters )) $
+		/ ( max ( vPer_binCenters ) - min ( vPer_binCenters ) ) * (vPer_nBins-1)
 
 	nGridPar	= (vPar_binCenters2 - min ( vPar_binCenters )) $
 		/ ( max ( vPar_binCenters ) - min ( vPar_binCenters ) ) * (vPar_nBins-1)
@@ -678,7 +678,7 @@ if keyword_set ( compare ) then begin
 	colors	= reverse ( bytScl ( levels, top = 253 ) + 1 )
 	loadct, 1, /silent
 	contour, transpose ( f_vv2 ), $
-				vPar_binCenters2*1d-6, vPerp_binCenters2*1d-6, $
+				vPar_binCenters2*1d-6, vPer_binCenters2*1d-6, $
 				levels = levels, $
 				c_colors = colors, $
 				color = 0, $
@@ -688,17 +688,17 @@ if keyword_set ( compare ) then begin
 				xRange = [-1.1,1.1], xStyle = 1
 
 	contour, transpose ( f_vv2 ), $
-				vPar_binCenters2*1d-6, vPerp_binCenters2*1d-6, $
+				vPar_binCenters2*1d-6, vPer_binCenters2*1d-6, $
 				levels = levels, $
 				c_colors = (colors*1.2)<254, $
 				color = 0, $
 				charSize = 1.0, /over
 	plots, [-1.1,1.1],$
-			[vPerp_binCenters2[1],vPerp_binCenters2[1]]*1d-6, $
+			[vPer_binCenters2[1],vPer_binCenters2[1]]*1d-6, $
 			color = 0, $
 			lineStyle = 2
 	plots, [vPar_binCenters2[vPar_nBins2/2],vPar_binCenters2[vPar_nBins2/2]]*1d-6,$
-			[vPerp_binEdges2[0],max(vPerp_binEdges2)]*1d-6, $
+			[vPer_binEdges2[0],max(vPer_binEdges2)]*1d-6, $
 			color = 0, $
 			lineStyle = 2
 	
@@ -725,7 +725,7 @@ if keyword_set ( compare ) then begin
 
 	loadct, 3, /silent
 	contour, transpose ( f_vv ), $
-				vPar_binCenters2*1d-6, vPerp_binCenters2*1d-6, $
+				vPar_binCenters2*1d-6, vPer_binCenters2*1d-6, $
 				levels = levels, $
 				c_colors = colors, $
 				color = 0, $
@@ -736,40 +736,40 @@ if keyword_set ( compare ) then begin
 
 
 	contour, transpose ( f_vv ), $
-				vPar_binCenters2*1d-6, vPerp_binCenters2*1d-6, $
+				vPar_binCenters2*1d-6, vPer_binCenters2*1d-6, $
 				levels = levels, $
 				c_colors = (colors*1.2)<254, $
 				color = 0, $
 				charSize = 1.0, /over
 	plots, [-1.1,1.1],$
-			[vPerp_binCenters2[1],vPerp_binCenters2[1]]*1d-6, $
+			[vPer_binCenters2[1],vPer_binCenters2[1]]*1d-6, $
 			color = 0, $
 			lineStyle = 2
 	plots, [vPar_binCenters2[vPar_nBins2/2],vPar_binCenters2[vPar_nBins2/2]]*1d-6,$
-			[vPerp_binEdges2[0],max(vPerp_binEdges2)]*1d-6, $
+			[vPer_binEdges2[0],max(vPer_binEdges2)]*1d-6, $
 			color = 0, $
 			lineStyle = 2
 	
 	loadct, 12, /silent
-	plot, vPerp_binCenters2*1d-6, f_vv2[*,vPar_nBins2/2],$
+	plot, vPer_binCenters2*1d-6, f_vv2[*,vPar_nBins2/2],$
 		   	color = 0,$
 			xTitle = 'vPer [x10!U6!N m/s]', $
 			yTitle = 'f [s!U3!N/m!U6!N]', /noData
-	oplot, vPerp_binCenters2*1d-6, f_vv_a[*,vPar_nBins2/2], color = 0, thick = 2.0
+	oplot, vPer_binCenters2*1d-6, f_vv_a[*,vPar_nBins2/2], color = 0, thick = 2.0
 	loadct, 3, /silent
-	oplot, vPerp_binCenters2*1d-6, f_vv[*,vPar_nBins2/2], color = 150, thick = 1.0
+	oplot, vPer_binCenters2*1d-6, f_vv[*,vPar_nBins2/2], color = 150, thick = 1.0
 	loadct, 1, /silent
-	oplot, vPerp_binCenters2*1d-6, f_vv2[*,vPar_nBins2/2], color = 150, thick = 1.0
+	oplot, vPer_binCenters2*1d-6, f_vv2[*,vPar_nBins2/2], color = 150, thick = 1.0
 
-	plot, vPerp_binCenters2*1d-6, dfduper2[*,vPar_nBins2/2], $
+	plot, vPer_binCenters2*1d-6, dfduper2[*,vPar_nBins2/2], $
 			color = 0,$
 			xTitle = 'vPer [x10!U6!N m/s]', $
 			yTitle = 'dfdvPer', /noData
-	oplot, vPerp_binCenters2*1d-6, dfduper_a[*,vPar_nBins2/2], color = 0, thick = 2.0
+	oplot, vPer_binCenters2*1d-6, dfduper_a[*,vPar_nBins2/2], color = 0, thick = 2.0
 	loadct, 3, /silent
-	oplot, vPerp_binCenters2*1d-6, dfduper[*,vPar_nBins2/2], color = 150, thick = 1.0
+	oplot, vPer_binCenters2*1d-6, dfduper[*,vPar_nBins2/2], color = 150, thick = 1.0
 	loadct, 1, /silent
-	oplot, vPerp_binCenters2*1d-6, dfduper2[*,vPar_nBins2/2], color = 150, thick = 1.0
+	oplot, vPer_binCenters2*1d-6, dfduper2[*,vPar_nBins2/2], color = 150, thick = 1.0
 
 endif
 device, /close_file
@@ -794,16 +794,18 @@ set_plot, 'X'
             ThisDensity = Density[j,jII]
 
 			c=contour(transpose ( f_vv )	, $
-				vPar_binCenters / 1.0e6, vPerp_binCenters / 1.0e6, $
+				vPar_binCenters / 1.0e6, vPer_binCenters / 1.0e6, $
                 layout=[3,2,cnt], current=current, $
 				c_value = levels,$
-                rgb_table = 51, $
+				c_color = levels * 0, $
+				c_label_show = 0, $
+                rgb_table = 1, $
 				xRange = [-max(vPar_binCenters),max(vPar_binCenters)]/1e6,$
-				yRange = [0.0,max(vPerp_binCenters)] / 1.0e6, $
+				yRange = [0.0,max(vPer_binCenters)] / 1.0e6, $
 				title = 'R = '+string(r_binCenters[j],format='(f4.2)')+'  Density: '+string(ThisDensity,format='(e8.1)'), $
 				yTitle = 'vPer [m/s] x10!U6!N', $
 				xTitle = 'vPar [m/s] x10!U6!N', $
-				xTickFormat = '(i2)')
+				xTickFormat = '(f4.1)')
 			endif
             
 	endfor	
@@ -901,16 +903,21 @@ endfor
 
 
 eqdskFName = 'eqdsk'
-g=readgeqdsk(eqdskFName)
+g=readgeqdsk(eqdskFName,/noTor)
 
 slice = n_elements(density[0,*])/2
 r = r_binCenters2d[*,slice]
-z = z_binCenters2d[0,*]
+z = reform(z_binCenters2d[0,*])
 
-p=plot(r,density[*,slice],title='density [m^-3]')
-p=plot(r,temp_eV[*,slice],title='temp [eV]')
-c=contour(density,r,z,/fill,rgb_table=51)
+dR = r[1]-r[0]
+dZ = z[1]-z[0]
 
+p=plot(r,density[*,slice],title='density [m^-3]',layout=[2,2,1])
+p=plot(r,density_file[*,slice],/over,color='r')
+p=plot(r,temp_eV[*,slice],title='temp [eV]',layout=[2,2,2],/current)
+c=contour(density,r,z,/fill,rgb_table=51,layout=[2,2,3],/current)
+
+print, 'Total number of particles : ', total(density*r_binCenters2d)*dR*dZ*2*!pi
 
 stop
 end

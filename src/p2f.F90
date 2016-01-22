@@ -41,10 +41,10 @@ program p2f
         !call gc_orbit ( 2.04280, -0.115082, 218696.93, -8985448.2 )
 
         if ( mod ( i, 100 ) == 0 .and. mpi_pId == 0 ) &
-            write(*,*) nP, mpi_nP, i, p_R(i), p_z(i), p_vPerp(i), p_vPar(i)
+            write(*,*) nP, mpi_nP, i, p_R(i), p_z(i), p_vPer(i), p_vPar(i)
 
         if ( p_weight(i) > 0 ) &
-            call gc_orbit ( p_R(i), p_z(i), p_vPerp(i),&
+            call gc_orbit ( p_R(i), p_z(i), p_vPer(i),&
                 p_vPar(i), p_weight(i) , plot = plotOrbit )
 
     end do
@@ -52,9 +52,9 @@ program p2f
 
     call mpi_barrier ( MPI_COMM_WORLD, mpi_iErr )
 
-    mpi_count_   = R_nBins * z_nBins * vPerp_nBins * vPar_nBins
+    mpi_count_   = R_nBins * z_nBins * vPer_nBins * vPar_nBins
 
-    allocate ( f_rzvv_global ( R_nBins, z_nBins, vPerp_nBins, vPar_nBins ) )
+    allocate ( f_rzvv_global ( R_nBins, z_nBins, vPer_nBins, vPar_nBins ) )
     call mpi_reduce ( f_rzvv, f_rzvv_global, mpi_count_, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
 
     f_rzvv = f_rzvv_global
@@ -85,12 +85,12 @@ program p2f
                 '   *** this means you need a larger MaxSteps'
         write (*,'(a,f5.2,a)') 'Wall:      ', real ( nP_wall_total ) / real ( nP ) * 100.0, '%'
         write (*,'(a,f5.2,a)') 'Bad:       ', real ( nP_bad_total ) / real ( nP ) * 100.0, '%'
-        write (*,'(a,f5.2,a,a)') 'off_vGrid: ', real ( nP_off_vGrid_total ) / real ( nP ) * 100.0, '%', &
+        write (*,'(a,f7.3,a,a)') 'off_vGrid: ', real ( nP_off_vGrid_total ) / real ( nP ) * 100.0, '%', &
             '   *** only applicable for gParticle = .false.'
         write (*,'(a,f5.2,a)') 'badWeight: ', real ( nP_badWeight_total ) / real ( nP ) * 100.0, '%'
         write (*,'(a,f5.2,a)') 'badEnergy: ', real ( nP_badEnergy_total ) / real ( nP ) * 100.0, '%'
         write (*,'(a,f5.1,a)') 'Suggested eNorm: ', &
-            real ( maxVal ( vPerp_binCenters )**2 * 0.5 * mi / e_ / 1e3 ), ' keV'
+            real ( maxVal ( vPer_binCenters )**2 * 0.5 * mi / e_ / 1e3 ), ' keV'
 
         !   Integrate over velocity space to get a number for
         !   density for sanity check ;-)
@@ -100,15 +100,15 @@ program p2f
             do j = 1, z_nBins
     
                 tmpDensity  = 0
-                do k = 1, vPerp_nBins
+                do k = 1, vPer_nBins
 
                     tmpDensity = tmpDensity + &
-                        sum ( f_rzvv(i,j,k,:) ) * vPerp_binCenters(k)
+                        sum ( f_rzvv(i,j,k,:) ) * vPer_binCenters(k)
 
                 end do
                 
                 density(i,j)    = tmpDensity * &
-                    2.0 * pi * vPerp_binSize * vPar_binSize
+                    2.0 * pi * vPer_binSize * vPar_binSize
 
             end do
         end do

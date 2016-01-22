@@ -1,0 +1,22 @@
+# Compiler
+F77 = mpif90
+F90	= mpif90  
+F90FLAGS += -J${MOD} -O3 #-Wall -g -fbacktrace -fbounds-check 
+FFLAGS += -O3 #-fbacktrace -g
+
+# Dislin
+#DISLINDIR = /home/dg6/code/dislin/dislin_gnu_4.7.2
+#INCLUDES += -I ${DISLINDIR}/gf 
+#LINKS += -L ${DISLINDIR} -ldislin 
+#INCLUDES += -DUSEDISLIN
+
+# NetCDF
+NETCDFDIR = /opt/local
+INCLUDES += -I ${NETCDFDIR}/lib -I ${NETCDFDIR}/include
+LINKS += -L ${NETCDFDIR}/lib -lnetcdf -lnetcdff
+
+# Opt
+#OPTDIR = ${HOME}/opt
+#INCLUDES += -I${OPTDIR}/opt/include 
+#LINKS += -L${OPTDIR}/opt/lib/static -lopt-openmpi -lstdc++ -ldl
+

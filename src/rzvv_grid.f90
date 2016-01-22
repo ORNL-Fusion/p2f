@@ -2,15 +2,15 @@ module rzvv_grid
     implicit none
     save
     
-    real :: R_range, z_Range, vPerp_range, vPar_range
-    real :: R_binSize, z_binSize, vPerp_binSize, vPar_binSize
+    real :: R_range, z_Range, vPer_range, vPar_range
+    real :: R_binSize, z_binSize, vPer_binSize, vPar_binSize
     real, allocatable :: R_binEdges (:), &
             z_binEdges (:), &
-            vPerp_binEdges (:), &
+            vPer_binEdges (:), &
             vPar_binEdges (: )
     real, allocatable :: R_binCenters (:), &
             z_binCenters (:), &
-            vPerp_binCenters (:), &
+            vPer_binCenters (:), &
             vPar_binCenters (: )
     real :: z_min, z_max, R_min, R_max
 
@@ -31,13 +31,13 @@ contains
 
         allocate ( R_binEdges ( R_nBins + 1 ), &
                    z_binEdges ( z_nBins + 1 ), &
-                   vPerp_binEdges ( vPerp_nBins + 1 ), &
+                   vPer_binEdges ( vPer_nBins + 1 ), &
                    vPar_binEdges ( vPar_nBins + 1 ), &
                    R_binCenters ( R_nBins ), &
                    z_binCenters ( z_nBins ), &
-                   vPerp_binCenters ( vPerp_nBins ), &
+                   vPer_binCenters ( vPer_nBins ), &
                    vPar_binCenters ( vPar_nBins ) )
-        allocate ( f_rzvv ( R_nBins, z_nBins, vPerp_nBins, vPar_nBins ) )
+        allocate ( f_rzvv ( R_nBins, z_nBins, vPer_nBins, vPar_nBins ) )
         allocate ( density ( R_nBins, z_nBins ) )
 
         R_min   = minVal ( rbbbs )
@@ -59,11 +59,11 @@ contains
         if(mpi_pId==1) write(*,*) 'z_min: ', z_min
         if(mpi_pId==1) write(*,*) 'z_max: ', z_max
 
-        vPerp_range = vPerInRange / 100.0 * c 
-        vPerp_binSize   = vPerp_range / vPerp_nBins
-        vPerp_binEdges   = (/ (i*vPerp_binSize,i=0,vPerp_nBins) /)
-        vPerp_binCenters    = vPerp_binEdges(1:vPerp_nBins) &
-            + vPerp_binSize / 2.0
+        vPer_range = vPerInRange / 100.0 * c 
+        vPer_binSize   = vPer_range / vPer_nBins
+        vPer_binEdges   = (/ (i*vPer_binSize,i=0,vPer_nBins) /)
+        vPer_binCenters    = vPer_binEdges(1:vPer_nBins) &
+            + vPer_binSize / 2.0
 
         vPar_range  = vParInRange / 100.0 * c
         vPar_binSize    = 2.0 * vPar_range / vPar_nBins
