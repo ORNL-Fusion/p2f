@@ -6,7 +6,7 @@ The two example cases have "real" Maxwellian distrubtions, i.e., more particles 
 These sample particle lists (the "f.nc" files) are created using an [IDL script](https://github.com/dlg0/sMC/blob/smc_cpp/idl/create_test_particle_f.pro) available in the sMC repository using the following command 
 
 ```
-create_test_particle_f, /standard_maxwellian_3d, energy_keV=0.5, n_particles=10000, nVth=3, eqdsk='eqdsk', density_m3=1e13
+IDL> create_test_particle_f, /standard_maxwellian_3d, energy_keV=0.5, n_particles=100000, eqdsk='eqdsk', density_m3=1e13, amu=1., Z=1.
 ```
 
 This will create a uniform (flat) density / uniform temperature (Maxwellian) particle list with vTh=sqrt(3kT/m)
