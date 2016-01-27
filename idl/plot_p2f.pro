@@ -912,10 +912,23 @@ z = reform(z_binCenters2d[0,*])
 dR = r[1]-r[0]
 dZ = z[1]-z[0]
 
-p=plot(r,density[*,slice],title='density [m^-3]',layout=[2,2,1])
-p=plot(r,density_file[*,slice],/over,color='r')
-p=plot(r,temp_eV[*,slice],title='temp [eV]',layout=[2,2,2],/current)
-c=contour(density,r,z,/fill,rgb_table=51,layout=[2,2,3],/current)
+margin = [0.2,0.1,0.1,0.1]
+font_size = 9
+p=plot(r,density[*,slice],$
+	title='density [m^-3]',layout=[2,2,1],$
+	margin=margin,font_size=font_size)
+p=plot(r,density_file[*,slice],$
+	/over,color='r')
+p=plot(r,temp_eV[*,slice],$
+	title='temp [eV]',layout=[2,2,2],/current,$
+	margin=margin,font_size=font_size)
+c=contour(density,r,z,$
+	/fill,rgb_table=51,layout=[2,2,3],/current,$
+	margin=margin,font_size=font_size)
+c=contour(temp_eV,r,z,$
+	/fill,rgb_table=51,layout=[2,2,4],/current,$
+	margin=margin,font_size=font_size)
+p.save, 'p2f_profiles.png', resolution=300, /transparent
 
 print, 'Total number of particles : ', total(density*r_binCenters2d)*dR*dZ*2*!pi
 
