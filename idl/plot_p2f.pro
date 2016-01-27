@@ -83,7 +83,7 @@ endif
 	ncdf_varGet, cdfId, 'z_binSize', z_binSize
 	ncdf_varGet, cdfId, 'vPer_binSize', vPer_binSize
 	ncdf_varGet, cdfId, 'vPar_binSize', vPar_binSize
-	ncdf_varGet, cdfId, 'density', density_file
+	ncdf_varGet, cdfId, 'density', density_m3_file
 
 	ncdf_dimInq, cdfId, ncdf_dimId ( cdfId, 'R_nBins' ), name, R_nBins
 	ncdf_dimInq, cdfId, ncdf_dimId ( cdfId, 'z_nBins' ), name, z_nBins
@@ -106,33 +106,32 @@ if  keyword_set ( compare ) then begin
 
 endif
 
-;	Create a density map
-	print, 'Create density map'
+;	Calculate moments to get Density & Temp
 
 	vPer_3D	= rebin ( vPer_binCenters, vPer_nBins, R_nBins, z_nBins )
 	vPer_3D	= transpose ( vPer_3D, [1,2,0] )
 
-	vPar_3D	= rebin ( vPar_binCenters, vPar_nBins, R_nBins, z_nBins )
-	vPar_3D	= transpose ( vPar_3D, [1,2,0] )
-
-    vMag_3D = sqrt (vPer_3D^2 + vPar_3D^2)
+	vPer_4D	= rebin ( vPer_binCenters, vPer_nBins, vPar_nBins, z_nBins, R_nBins )
+	vPer_4D	= transpose ( vPer_4D, [3,2,0,1] )
 
 	vPar_4D	= rebin ( vPar_binCenters, vPar_nBins, vPer_nBins, z_nBins, R_nBins )
 	vPar_4D	= transpose ( vPar_4D, [3,2,1,0] )
 
+	vMag_4D = sqrt(vPer_4D^2+vPar_4D^2)
+
 	R_2D	= rebin ( R_binCenters, R_nBins, z_nBins )
 
-	density	= total ( total ( f_rzvv, 4 ) * vPer_3D , 3 ) * $
-		vPer_binSize * vPar_binSize * 2.0 * !pi
+	VJacobian = 2 * !pi * vPer_binSize * vPar_binSize * vPer_3D
 
-	temp_eV	= mi * total ( vPer_3D^2 * total ( f_rzvv, 4 ) * vPer_3D , 3 ) * $
-		vPer_binSize * vPar_binSize * 2.0 * !pi / density / e_
-
+	Density_m3	= total ( total ( f_rzvv, 4 ) * VJacobian , 3 )
+	KEnergyDensity_J = 0.5 * mi * total ( total ( vMag_4D^2 * f_rzvv, 4 ) * VJacobian, 3 ) 
+	AverageKE_J = KEnergyDensity_J / Density_m3
+	temp_eV = AverageKE_J / e_ * 0.5 ; not sure why this 0.5 is not a 2/3
 
 ;	Create nP map
 	print, 'Create nP map'
 
-	nParticle_map	= density * z_binSize * R_binSize * R_2D * 2.0 * !pi
+	nParticle_map	= density_m3 * z_binSize * R_binSize * R_2D * 2.0 * !pi
 
 ;	Create wPerp map ( perp energy PER PARTICLE )
 	print, 'Create wPerp map'
@@ -145,10 +144,10 @@ endif
 		* vPer_binSize * vPar_binSize * 2.0 * !pi
 
 
-	wPerp	= wPerp / e_ * 1d-3 / density
-	wPar	= wPar / e_ * 1d-3 / density
+	wPerp	= wPerp / e_ * 1d-3 / density_m3
+	wPar	= wPar / e_ * 1d-3 / density_m3
 
-	iiBad	= where ( density eq 0, iiBadCnt )
+	iiBad	= where ( density_m3 eq 0, iiBadCnt )
 	if iiBadCnt gt 0 then wPerp[iiBad] = 0
 	if iiBadCnt gt 0 then wPar[iiBad] = 0
 
@@ -156,16 +155,16 @@ endif
 ;	Create flux surface averaged quantities
 
 ;--------------------------------------------
-;	Create a density profile
+;	Create a density_m3 profile
 
-	density_all	= 0.0
+	density_m3_all	= 0.0
 	wperp_all	= 0.0
 	wpar_all	= 0.0
 
 	R_all	= 0.0
 	z_all	= 0.0
 
-	maskIn	= intArr ( size (density) )
+	maskIn	= intArr ( size (density_m3) )
 
 	print, 'Create flux surface average f'
 	for i = 0, R_nBins-1 do begin
@@ -181,7 +180,7 @@ endif
 			if (size(f_vv_all,/dim))[0] eq 0 then f_vv_all = reform(f_rzvv[i,j,*,*]) $
 				else f_vv_all = [ [[ f_vv_all ]], [[ reform ( f_rzvv[i,j,*,*] ) ]] ]
 			
-			density_all	= [ density_all, density[i,j] ]
+			density_m3_all	= [ density_m3_all, density_m3[i,j] ]
 			wperp_all	= [ wperp_all, wperp[i,j] ]
 			wpar_all	= [ wpar_all, wpar[i,j] ]
 
@@ -194,7 +193,7 @@ endif
 	
 	endfor
 
-	density_all	= density_all[1:*]
+	density_m3_all	= density_m3_all[1:*]
 	wperp_all	= wperp_all[1:*]
 	wpar_all	= wpar_all[1:*]
 
@@ -223,7 +222,7 @@ endif
 	dRho	= abs(rho_binEdges[1]-rho_binEdges[2])
 	rho_binCenters	= rho_binEdges[1:*] - dRho/2.0
 
-	density_rho	= fltArr ( n_elements ( rho_binCenters ) )
+	density_m3_rho	= fltArr ( n_elements ( rho_binCenters ) )
 	wperp_rho	= fltArr ( n_elements ( rho_binCenters ) )
 	wpar_rho	= fltArr ( n_elements ( rho_binCenters ) )
 
@@ -235,7 +234,7 @@ endif
 							AND rho_all lt rho_binCenters[i] + dRho $
 							AND psiNorm_all le 1, cnt)
 		if cnt gt 0 then begin
-			density_rho[i]	= total ( density_all[ iiDx ] ) / cnt
+			density_m3_rho[i]	= total ( density_m3_all[ iiDx ] ) / cnt
 			wperp_rho[i]	= total ( wperp_all[ iiDx ] ) / cnt
 			wpar_rho[i]	= total ( wpar_all[ iiDx ] ) / cnt
 
@@ -284,11 +283,11 @@ endif
 	print, 'Fit to get aorsa profile parameters'	
 	AA	= [nLim,n0,alpha,beta_]
 	iiKeep	= where ( psi_2D lt 0.9 )
-	densityFit	= curveFit ( sqrt(psi_2D[iiKeep]), density[iiKeep], density[iiKeep]*0+1, AA, sigmaFit, $
+	density_m3Fit	= curveFit ( sqrt(psi_2D[iiKeep]), density_m3[iiKeep], density_m3[iiKeep]*0+1, AA, sigmaFit, $
 		   function_name = 'profile_fit', /noDeriv, status = status ) 
 
-	density_rho_aorsaFIT	= aa[0]+ ( aa[1] - aa[0] )*(1d0-rho_binCenters^aa[3])^aa[2]
-	density_rho_aorsa	= nLim + ( n0 - nLim )*(1d0-rho_binCenters^beta_)^alpha
+	density_m3_rho_aorsaFIT	= aa[0]+ ( aa[1] - aa[0] )*(1d0-rho_binCenters^aa[3])^aa[2]
+	density_m3_rho_aorsa	= nLim + ( n0 - nLim )*(1d0-rho_binCenters^beta_)^alpha
 
 	old_dev = !D.name
 	set_plot, 'ps'
@@ -298,25 +297,25 @@ endif
 		xsize=10, ysize = 16,xoffset=.1, yoffset=.1, /encapsul
 	!p.charSize = 1.0
 	!p.multi	= [0,1,2]
-	plot, sqrt ( psi_2D ), density/1e19, $
+	plot, sqrt ( psi_2D ), density_m3/1e19, $
 		psym = 4, $
 		xtitle = 'rho', $
-		ytitle = 'density [m!U-3!N] x10!U19!N', $
+		ytitle = 'density_m3 [m!U-3!N] x10!U19!N', $
 		xRange = [0, 1], $
 		color = 0, $
 		yRange = [0,0.3], $
 		yStyle = 1
 	loadct, 12, /silent
-	oPlot, rho_binCenters, density_rho/1e19, $
+	oPlot, rho_binCenters, density_m3_rho/1e19, $
 		color = 8*16-1, $
 		thick = 2.0
-	oPlot, rho_binCenters, density_rho_aorsa/1e19,$
+	oPlot, rho_binCenters, density_m3_rho_aorsa/1e19,$
 		thick = 2.0, $
 		color = 1*16-1
 
 	if status eq 0 then begin
-	print, 'Density fit successfull'
-	oPlot, rho_binCenters, density_rho_aorsaFIT/1e19,$
+	print, 'density_m3 fit successfull'
+	oPlot, rho_binCenters, density_m3_rho_aorsaFIT/1e19,$
 		thick = 2.0, $
 		color = 12*16-1
 	xyOuts, 0.1, 0.98, 'nLim x19: '+string(aa[0]/1e19,for='(f7.5)') $
@@ -327,7 +326,7 @@ endif
 		   color = 12*16-1, $
 		   charSize = 0.8, $
 		   font = 0
-    endif else print, 'Density fit UNSUCCESSFUL'
+    endif else print, 'density_m3 fit UNSUCCESSFUL'
 
 ;		plots, [0.7,0.7], [1.8,1.8], $
 ;			   color = 12*16-1, psym = 4 
@@ -615,11 +614,11 @@ if keyword_set ( compare ) then begin
 	!p.charsize = 1.0
 	loadct, 12, /silent
 
-	pt	= where ( density eq max ( density ) )
-	i	= (array_indices(density,pt))[0]
-	j	= (array_indices(density,pt))[1]
+	pt	= where ( density_m3 eq max ( density_m3 ) )
+	i	= (array_indices(density_m3,pt))[0]
+	j	= (array_indices(density_m3,pt))[1]
 
-	densityHere	= density[i,j]
+	density_m3Here	= density_m3[i,j]
 	tempHere	= tempProfile[i,j]	
 
 	f_vv	= reform(f_rzvv[i,j,*,*])
@@ -647,7 +646,7 @@ if keyword_set ( compare ) then begin
 		endfor
 	endfor
 	
-	f_vv_a	= densityHere * f_vv_a $
+	f_vv_a	= density_m3Here * f_vv_a $
 		/ total ( f_vv_a * rebin(vPer_binCenters,vPer_nBins,vPar_nBins) * dVpar * dVPer * 2.0 * !Pi )
 
 	dfdupar	= dlg_pderiv ( f_vv, 2, dVpar )
@@ -791,7 +790,7 @@ set_plot, 'X'
 			jII	= 	n_elements(f_rzvv[0,*,0,0])/2
 			f_vv = reform(f_rzvv[j,jII,*,*])
 
-            ThisDensity = Density[j,jII]
+            Thisdensity_m3 = density_m3[j,jII]
 
 			c=contour(transpose ( f_vv )	, $
 				vPar_binCenters / 1.0e6, vPer_binCenters / 1.0e6, $
@@ -802,14 +801,14 @@ set_plot, 'X'
                 rgb_table = 1, $
 				xRange = [-max(vPar_binCenters),max(vPar_binCenters)]/1e6,$
 				yRange = [0.0,max(vPer_binCenters)] / 1.0e6, $
-				title = 'R = '+string(r_binCenters[j],format='(f4.2)')+'  Density: '+string(ThisDensity,format='(e8.1)'), $
+				title = 'R = '+string(r_binCenters[j],format='(f4.2)')+'  density_m3: '+string(Thisdensity_m3,format='(e8.1)'), $
 				yTitle = 'vPer [m/s] x10!U6!N', $
 				xTitle = 'vPar [m/s] x10!U6!N', $
-				xTickFormat = '(f4.1)')
+				xTickFormat = '(f4.1)',dimensions=[900,500])
 			endif
             
 	endfor	
-
+	c.save, 'p2f_f0.png', resolution=300, /transparent
 old_dev = !D.name
 set_plot, 'ps'
 outfname	= 'data/wPerp2D.eps'
@@ -860,21 +859,21 @@ plots, eqdsk.rbbbs, eqdsk.zbbbs, $
 
 device, /close_file
 
-outfname	= 'data/density2D.eps'
-print, 'Write data/density2D.eps'
+outfname	= 'data/density_m32D.eps'
+print, 'Write data/density_m32D.eps'
 device, filename=outfname, preview=0, /color, bits_per_pixel=8, $
 	xsize=10, ysize = 10,xoffset=.1, yoffset=.1, /encapsul
 	
 levels	= (fIndGen(100)+1)/100*6e18
 colors	= reverse (  bytScl( levels, top = 253 ) + 1 )
-contour, density, R_binCenters, z_binCenters, $
+contour, density_m3, R_binCenters, z_binCenters, $
 	levels = levels, $
 	c_colors = colors, $
 	color = 0, $
 	yRange = [min(eqdsk.zbbbs),max(eqdsk.zbbbs)], $
 	yStyle = 1, $
 	/fill, $
-	title = 'density', $
+	title = 'density_m3', $
 	xtitle = 'R [m]', $
 	yTitle = 'z [m]'
 plots, eqdsk.rbbbs, eqdsk.zbbbs, $
@@ -905,7 +904,7 @@ endfor
 eqdskFName = 'eqdsk'
 g=readgeqdsk(eqdskFName,/noTor)
 
-slice = n_elements(density[0,*])/2
+slice = n_elements(density_m3[0,*])/2
 r = r_binCenters2d[*,slice]
 z = reform(z_binCenters2d[0,*])
 
@@ -914,15 +913,15 @@ dZ = z[1]-z[0]
 
 margin = [0.2,0.1,0.1,0.1]
 font_size = 9
-p=plot(r,density[*,slice],$
-	title='density [m^-3]',layout=[2,2,1],$
+p=plot(r,density_m3[*,slice],$
+	title='density_m3 [m^-3]',layout=[2,2,1],$
 	margin=margin,font_size=font_size)
-p=plot(r,density_file[*,slice],$
+p=plot(r,density_m3_file[*,slice],$
 	/over,color='r')
 p=plot(r,temp_eV[*,slice],$
 	title='temp [eV]',layout=[2,2,2],/current,$
 	margin=margin,font_size=font_size)
-c=contour(density,r,z,$
+c=contour(density_m3,r,z,$
 	/fill,rgb_table=51,layout=[2,2,3],/current,$
 	margin=margin,font_size=font_size)
 c=contour(temp_eV,r,z,$
@@ -930,7 +929,7 @@ c=contour(temp_eV,r,z,$
 	margin=margin,font_size=font_size)
 p.save, 'p2f_profiles.png', resolution=300, /transparent
 
-print, 'Total number of particles : ', total(density*r_binCenters2d)*dR*dZ*2*!pi
+print, 'Total number of particles : ', total(density_m3*r_binCenters2d)*dR*dZ*2*!pi
 
 stop
 end

@@ -21,6 +21,7 @@ integer :: z_nBins = 20 !<Number of bins in z (Vertical).
 integer :: vPer_nBins = 64 !<Number of vPer bins. Note: set this value low (~16) when gParticle = .false.
 integer :: vPar_nBins = 128 !<Number of vPar bins. Note: set this value low (~32) when gParticle = .false.
 real :: amu = 1.0 !< 1.0 for H, 2.0 for D, etc ...
+real :: AtomicZ = 1.0 !< 1.0 for H, 2.0 for D, etc ...
 logical :: plotOrbit = .false. !<Use DISLIN to plot the orbits when DistributeAlongOrbit = .false. but this only works on dlg-hp now and is primarily for debugging. So leave it off.
 logical :: NFO = .false. !<Compute orbits without finite orbits.
 logical :: DistributeAlongOrbit = .false. !<No orbit averaging, just particles where they are.
@@ -45,6 +46,7 @@ namelist / P2FIN / nP,&
     vPer_nBins, &
     vPar_nBins, &
     amu, &
+    AtomicZ, &
     plotOrbit, &
     NFO, &
     DistributeAlongOrbit, &

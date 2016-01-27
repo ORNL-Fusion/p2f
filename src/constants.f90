@@ -6,7 +6,7 @@ module constants
     real, parameter :: e_ = 1.602176e-19
     real :: mi
     real, parameter :: c = 3.0e8
-    real, parameter :: q = 1.0 * e_
+    real :: q 
     real, parameter :: pi = 3.14159265
     integer, parameter :: dp = selected_real_kind(15,307)
    
@@ -15,6 +15,7 @@ contains
         implicit none 
  
         mi = amu * 1.67262e-27
+        q = AtomicZ * e_ 
 
     end subroutine set_constants
 
