@@ -9,7 +9,7 @@ These sample particle lists (the "f.nc" files) are created using an [IDL script]
 create_test_particle_f, /standard_maxwellian_3d, energy_keV=0.5, n_particles=10000, nVth=3, eqdsk='eqdsk', density_m3=1e13
 ```
 
-This will create a uniform (flat) density / uniform temperature (Maxwellian) particle list.
+This will create a uniform (flat) density / uniform temperature (Maxwellian) particle list with vTh=sqrt(3kT/m)
 
 There are 3 smoothing options that p2f provides ...
 
