@@ -66,6 +66,7 @@ Total number of particles :   8.63336e+12
 ```
 The number of total particles is LOWER here by the 4.69% that were lost due to their orbits going outside the LCFS, i.e., they should never have really been in the particle list in the first place.
 ![No smoothing](https://github.com/dlg0/p2f/blob/master/example/Cmod_case/smooth1.png)
+<img src="https://github.com/dlg0/p2f/blob/master/example/Cmod_case/p2f_profiles-Distribute.png" width="600px">
 
 * Distribute and use a gaussian particle shape in velocity space
 ```
@@ -91,3 +92,4 @@ IDL>plot_p2f
 Total number of particles :   8.59016e+12
 ```
 ![No smoothing](https://github.com/dlg0/p2f/blob/master/example/Cmod_case/smooth3.png)
+<img src="https://github.com/dlg0/p2f/blob/master/example/Cmod_case/p2f_profiles-gParticle-Distribute.png" width="600px">
