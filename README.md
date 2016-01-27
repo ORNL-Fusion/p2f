@@ -39,7 +39,8 @@ We can then run the IDL post processing script to look at the result
 IDL>plot_p2f
 Total number of particles :   9.05914e+12
 ```
-![No smoothing](https://github.com/dlg0/p2f/blob/master/example/Cmod_case/smooth0.png)
+![No smoothing f0](https://github.com/dlg0/p2f/blob/master/example/Cmod_case/smooth0.png)
+![No smoothing profiles](https://github.com/dlg0/p2f/blob/master/example/Cmod_case/p2f_profiles.png)
 
 * Distribute a particle along its guiding center orbit according to how long it spends in each velocity space bin
 ```
