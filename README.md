@@ -74,5 +74,19 @@ particleSize = 4.0e-04
 ```
 ```
 lap101336:Cmod_case dg6$ mpirun -n 4 ~/code/p2f/xp2f.lap101336
+TookMaxStepsBeforeBounce:       0.00%
+   *** this means you need a larger MaxSteps
+Wall:       4.69%
+Bad:        0.00%
+off_vGrid:   0.000%   *** only applicable for gParticle = .false.
+badWeight:  0.00%
+badEnergy:  0.00%
+Suggested eNorm:  46.2 keV
+ Getting CPU time
+max ( density ): 0.11E+14
 ```
-
+```
+IDL>plot_p2f
+Total number of particles :   8.59016e+12
+```
+![No smoothing](https://github.com/dlg0/p2f/blob/master/example/Cmod_case/smooth3.png)
