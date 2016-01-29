@@ -1,3 +1,5 @@
+PARALLEL:=0
+
 OBJ = obj
 SRC := src
 MOD := mod
@@ -9,6 +11,7 @@ LINKS :=
 
 CPP_DIRECTIVES :=
 CPP_DIRECTIVES += -DDEBUG_LEVEL=0
+CPP_DIRECTIVES += -DPARALLEL=${PARALLEL}
 
 ThisMachine := $(shell uname -n)
 include Makefile.$(ThisMachine)
@@ -18,7 +21,7 @@ EXEC = xp2f.${ThisMachine}
 OBJECTS = $(wildcard ${OBJ}/*.o)
 
 ${EXEC}: ${SRC}/p2f.F90  
-	${F90} ${F90FLAGS} ${SRC}/p2f.f90 -o ${EXEC} ${INCLUDES} ${LINKS} ${OBJECTS} ${CPP_DIRECTIVES}
+	${F90} ${F90FLAGS} ${SRC}/p2f.F90 -o ${EXEC} ${INCLUDES} ${LINKS} ${OBJECTS} ${CPP_DIRECTIVES}
 
 ${OBJ}/%.o: ${SRC}/%.f
 	${F77} -c ${FFLAGS} ${INCLUDES} $< -o $@ 

@@ -9,7 +9,9 @@ integer :: MaxSteps = 10000
 integer, parameter :: LONG = selected_int_kind(9)
 integer(kind=LONG) :: nP = 1000 !< Number of particles to use.
 real :: particleSize = 10.0e-04 !< Gaussian particle size in \%c. 
+real :: particleSizeX = 0.01 !< Gaussian particle size in m. 
 logical :: gParticle = .false. !< Use gaussian particle shape or not.
+logical :: gParticle4D = .false. !< Use gaussian particle shape or not.
 character(len=100) :: pl_fileName = 'data/fdis_25keV_D_6_flat_D3D.dav' !<Input particle list filename.
 character(len=100) :: eqdsk_fileName = 'data/g122080.03100' !<Input gEqDsk filename.
 real :: vPerInRange = 2.0 !<vPer grid range in \%c
@@ -34,7 +36,9 @@ real :: energyThreshold = 0.0 !< [keV] lower energy limit of particles not to in
  
 namelist / P2FIN / nP,&
     gParticle, &
+    gParticle4D, &
     particleSize, &
+    particleSizeX, &
     pl_fileName, &
     eqdsk_fileName, &
     vPerInRange, &

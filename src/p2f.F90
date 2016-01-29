@@ -1,7 +1,3 @@
-!>  p2f is a program for converting particle lists from the ORBIT-rf code into
-!!  continuous distribution functions for use in AORSA, amoung other things. 
-!<
-
 program p2f
     use eqdsk
     use gc_terms
@@ -22,9 +18,9 @@ program p2f
     integer :: nP_wall_total, nP_bad_total, &
         nP_off_vGrid_total, nP_badWeight_total, nP_badEnergy_total, &
         nP_TookMaxStepsBeforeBounce_total
-    real :: tmpDensity !< Test description
+    real :: tmpDensity, TotalNumberOfParticles 
 
-    call init_namelist () !< Read in namelist variables from p2f.nml
+    call init_namelist () 
     call set_constants ()
     call read_geqdsk ( eqdsk_fileName, plot = .false. )
     call bCurvature ()
@@ -38,9 +34,7 @@ program p2f
 
     do i=mpi_start_,mpi_end_
  
-        !call gc_orbit ( 2.04280, -0.115082, 218696.93, -8985448.2 )
-
-        if ( mod ( i, 100 ) == 0 .and. mpi_pId == 0 ) &
+        if ( mod ( i, 100 ) == 0 .and. mpi_pId == 1 ) &
             write(*,*) nP, mpi_nP, i, p_R(i), p_z(i), p_vPer(i), p_vPar(i)
 
         if ( p_weight(i) > 0 ) &
@@ -49,17 +43,22 @@ program p2f
 
     end do
 
-
+#if PARALLEL==1
     call mpi_barrier ( MPI_COMM_WORLD, mpi_iErr )
-
+#endif
     mpi_count_   = R_nBins * z_nBins * vPer_nBins * vPar_nBins
 
     allocate ( f_rzvv_global ( R_nBins, z_nBins, vPer_nBins, vPar_nBins ) )
+#if PARALLEL==1
     call mpi_reduce ( f_rzvv, f_rzvv_global, mpi_count_, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
+#else
+    f_rzvv_global = f_rzvv
+#endif
 
     f_rzvv = f_rzvv_global
     deallocate(f_rzvv_global)
 
+#if PARALLEL==1
     call mpi_reduce ( nP_wall, nP_wall_total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
     call mpi_reduce ( nP_bad, nP_bad_total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
     call mpi_reduce ( nP_off_vGrid, nP_off_vGrid_total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
@@ -67,16 +66,24 @@ program p2f
     call mpi_reduce ( nP_badEnergy, nP_badEnergy_total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
     call mpi_reduce ( nP_TookMaxStepsBeforeBounce, &
             nP_TookMaxStepsBeforeBounce_total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
+#else
+    nP_wall_total = nP_wall
+    nP_bad_total = nP_bad
+    nP_off_vGrid_total = nP_off_vGrid
+    nP_badWeight_total = nP_badWeight
+    nP_badEnergy_total = nP_badEnergy
+    nP_TookMaxStepsBeforeBounce_total = nP_TookMaxStepsBeforeBounce
+#endif
 
     ! Test the reduction operation
     if(mpi_pId==1) write (*,*) 'Stopping MPI' 
-
+#if PARALLEL==1
     call stop_mpi () 
-
+#endif
     if(mpi_pId==1) write(*,*) 'Getting CPU time'   
     call cpu_time (T2)
  
-    if ( mpi_pId == 0 ) then
+    if ( mpi_pId == 1 ) then
 
 
         write (*,*) 'Time taken: ', T2-T1 
@@ -96,6 +103,7 @@ program p2f
         !   density for sanity check ;-)
 
         density = 0
+        TotalNumberOfParticles = 0
         do i = 1, R_nBins
             do j = 1, z_nBins
     
@@ -110,10 +118,13 @@ program p2f
                 density(i,j)    = tmpDensity * &
                     2.0 * pi * vPer_binSize * vPar_binSize
 
+                TotalNumberOfParticles = TotalNumberOfParticles + density(i,j)*r_binSize*z_binSize*2*pi*r_binCenters(i) 
+
             end do
         end do
 
         write(*,'(a,e8.2)') 'max ( density ): ', maxVal ( density )
+        write(*,'(a,e8.2)') 'TotalNumberOfParticles: ', TotalNumberOfParticles 
 
         call write_f ()
 

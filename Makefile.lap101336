@@ -1,6 +1,12 @@
 # Compiler
-F77 = mpif90
-F90	= mpif90  
+
+ifeq (${PARALLEL},1)
+    F77 = mpif90
+    F90	= mpif90  
+else
+    F77 = gfortran
+    F90 = gfortran
+endif
 F90FLAGS += -J${MOD} -O3 #-Wall -g -fbacktrace -fbounds-check 
 FFLAGS += -O3 #-fbacktrace -g
 

@@ -147,16 +147,17 @@ contains
             k2_vPar_n, k3_vPar_n, k4_vPar_n
         
         integer, allocatable, dimension(:) :: vPerL, vPerR, &
-            vParL, vParR, R_start, R_stop, &
-            z_start, z_stop
+            vParL, vParR, R_L, R_R, &
+            Z_L, Z_R
 
         real(kind=dbl) :: f_vv_update(vPer_nBins,vPar_nBins)
-	real(kind=dbl), allocatable :: f_rzvv_update(:,:,:,:)
-        real(kind=dbl) :: dV(vPer_nBins,vPar_nBins), dV_
+	    real(kind=dbl), allocatable :: f_rzvv_update(:,:,:,:)
+        real(kind=dbl) :: dV(vPer_nBins,vPar_nBins), dV_, this_dV, this_f
+        
 
-        real(kind=dbl) :: v_sigma
+        real(kind=dbl) :: v_sigma, x_sigma
         real(kind=dbl) :: normFac, normFac_, bArg
-        real(kind=dbl) :: bessi, bF, result_D, expTerm_D 
+        real(kind=dbl) :: bessi, bF, result_D, expTerm_D, expTermX
 
         !   if you change this you need to alter
         !   the initialisation of phi down further
@@ -170,7 +171,7 @@ contains
             theta_diff, theta_diff_old
         logical :: nearStart, skip_dtUpdate
         real :: EStep, energy
-        integer :: stride
+        integer :: stride, m, n, i_, j_, m_, n_
        
         !   Initialize variables
       
@@ -182,8 +183,12 @@ contains
             rTrack_nfo(MaxSteps), zTrack_nfo(MaxSteps), vPerTrack_nfo(MaxSteps), &
             vParTrack_nfo(MaxSteps))
         allocate(vPerL(MaxSteps), vPerR(MaxSteps), &
-            vParL(MaxSteps), vParR(MaxSteps), R_start(MaxSteps), R_stop(MaxSteps), &
-            z_start(MaxSteps), z_stop(MaxSteps))
+            vParL(MaxSteps), vParR(MaxSteps), R_L(MaxSteps), R_R(MaxSteps), &
+            Z_L(MaxSteps), Z_R(MaxSteps))
+
+        if(gParticle4D)then
+            allocate(f_rzvv_update(2*nGX+1,2*nGX+1,2*nGV+1,2*nGV+1))
+        endif
 
         stepCnt = 0
         firstOrbit  = .true.
@@ -206,6 +211,63 @@ contains
             weightMod = 0.0
         endif
 
+        ! Calculate the normalization factor of a particle 
+
+        normFac_ = 0.0
+
+        if(gParticle)then
+    
+            v_sigma = particleSize * c
+ 
+            !   Calculate normFac for full particle size,
+            !   No bessel function required here since the
+            !   vPer offset = 0, i.e., besselI(0,0,)=1.0
+  
+            f_vv_update = 0.0 
+            do i=1,vPer_nBins
+                do j=1,vPar_nBins
+                
+                    f_vv_update(i,j) =  exp ( &
+                            - ( vPer_binCenters(i)**2  &
+                            + vPar_binCenters(j)**2 ) &
+                            / ( 2d0 * v_sigma**2 ) &
+                            ) * 2d0 * pi  
+                            
+                    dV(i,j) = vPer_binCenters(i) * &
+                        4.0 * pi**2 * R_binSize * z_binSize * &
+                        vPer_binSize * vPar_binSize  
+                end do
+            end do
+            
+            normFac_ = sum ( f_vv_update * dV )  
+
+        else if(gParticle4D)then
+    
+            x_sigma = particleSizeX
+            v_sigma = particleSize * c
+ 
+            do m=max(r_nBins/2-nGX,1),min(r_nBins/2+nGX,r_nBins)
+            do n=max(z_nBins/2-nGX,1),min(z_nBins/2+nGX,z_nBins)
+            do i=max(vPer_nBins/2-nGV,1),min(vPer_nBins/2+nGV,vPer_nBins)
+            do j=max(vPar_nBins/2-nGV,1),min(vPar_nBins/2+nGV,vPar_nBins)
+                
+                this_f =  &
+                    exp ( - ( vPer_binCenters(i)**2  + vPar_binCenters(j)**2 ) / ( 2d0 * v_sigma**2 ) ) &
+                  * exp ( - ( r_binCenters(m)**2  + z_binCenters(n)**2 ) / ( 2d0 * x_sigma**2 ) ) 
+                        
+                this_dV = r_binCenters(m) * vPer_binCenters(i) * &
+                    4.0 * pi**2 * R_binSize * z_binSize * &
+                    vPer_binSize * vPar_binSize  
+
+                normFac_ = normFac_ + this_f*this_dV
+
+            enddo
+            enddo
+            enddo
+            enddo
+
+        endif
+ 
         if (.not.DistributeAlongOrbit) then
 
             NFO = .false.
@@ -254,7 +316,7 @@ contains
         
         dt  = dtMin
 
-        do 
+       do 
   
             ! Include finite orbits
 
@@ -461,7 +523,6 @@ contains
 #if DEBUG_LEVEL>0 
         if(mpi_pId==1) write(*,*) "Stride : ", stride
 #endif
-
         
         tau = tau / stride
         dtArray = dtArray / stride
@@ -491,38 +552,7 @@ contains
             vPar_index  = ( vParTrack + vPar_range ) / ( 2.0 * vPar_range ) &
                 * vPar_nBins + 1
 
-            if ( .not. gParticle ) then
-
-                do ss=1,stepCnt
-                    
-                    if ( int(R_index(ss)) <= R_nBins .and. int(R_index(ss)) >= 1 .and. &
-                        int(z_index(ss)) <= z_nBins .and. int(z_index(ss)) >= 1 .and. &
-                        int(vPer_index(ss)) <= vPer_nBins .and. int(vPer_index(ss)) >= 1 .and. &
-                        int(vPar_index(ss)) <= vPar_nBins .and. int(vPar_index(ss)) >= 1 ) then 
-
-                        dV_ = vPer_binCenters(int(vPer_index(ss))) * rTrack(ss) * &
-                            4.0 * pi**2 * R_binSize * z_binSize * &
-                            vPer_binSize * vPar_binSize  
-                   
-                        f_rzvv(int(R_index(ss)),int(z_index(ss)), &
-                               int(vPer_index(ss)),int(vPar_index(ss))) &
-                           = f_rzvv(int(R_index(ss)),int(z_index(ss)), &
-                               int(vPer_index(ss)),int(vPar_index(ss))) + dtArray(ss) / tau * weightMod / dV_
-                    
-                    else
-#if DEBUG_LEVEL>1  
-                        write(*,*) 'Off vPer Grid: ', vPer_index(ss), vPer_nBins
-                        write(*,*) 'Off vPar Grid: ', vPar_index(ss), vPar_nBins
-                        write(*,*) 'Off R Grid: ', R_index(ss), R_nBins
-                        write(*,*) 'Off z Grid: ', z_index(ss), z_nBins
-                        write(*,*) 'R: ', rTrack(ss), r_min, r_max, r_range 
-#endif
-                        nP_off_vGrid    = nP_off_vGrid + dtArray(ss) / tau
-                    end if
-                
-                end do
-
-            else
+            if (gParticle) then
 
                 if(vPer_nBins<64.or.vPar_nBins<128)then
                     write(*,*) 'ERROR : When using gParticle = .true. you need a fine v-space grid'
@@ -532,11 +562,7 @@ contains
                     stop
                 endif
 
-                !   Try adding a particle of some finite size 
-                !   described by a gaussian in 4D space
-    
-                v_sigma = particleSize * c
-                
+               
                 !   Loop only over a few cells around the particle location, 
                 !   otherwise this is prohibitavely slow. Its already a factor
                 !   of 10 slower than using the delta functions above :-(
@@ -551,38 +577,16 @@ contains
                 vParR  = int(vPar_index)+nGV
                 where (vParR > vPar_nBins) vParR = vPar_nBins
      
-                R_start = int(R_index)!-nGX
-                where (R_start < 1) R_start = 1
-                !R_stop  = int(R_index)!+nGX
-                where (R_start > R_nBins) R_start = R_nBins
+                R_L = int(R_index)!-nGX
+                where (R_L < 1) R_L = 1
+                !R_R  = int(R_index)!+nGX
+                where (R_L > R_nBins) R_L = R_nBins
 
-                z_start = int(z_index)!-nGX
-                where (z_start < 1) z_start = 1
-                !z_stop  = int(z_index)!+nGX
-                where (z_start > z_nBins) z_start = z_nBins
+                Z_L = int(z_index)!-nGX
+                where (Z_L < 1) Z_L = 1
+                !Z_R  = int(z_index)!+nGX
+                where (Z_L > z_nBins) Z_L = z_nBins
 
-
-                !   Calculate normFac for full particle size,
-                !   No bessel function required here since the
-                !   vPer offset = 0, i.e., besselI(0,0,)=1.0
-  
-                f_vv_update = 0.0 
-                do i=1,vPer_nBins
-                    do j=1,vPar_nBins
-                    
-                        f_vv_update(i,j) =  exp ( &
-                                - ( vPer_binCenters(i)**2  &
-                                + vPar_binCenters(j)**2 ) &
-                                / ( 2d0 * v_sigma**2 ) &
-                                ) * 2d0 * pi  
-                                
-                        dV(i,j) = vPer_binCenters(i) * &
-                            4.0 * pi**2 * R_binSize * z_binSize * &
-                            vPer_binSize * vPar_binSize  
-                    end do
-                end do
-            
-                normFac_ = sum ( f_vv_update * dV )  
 
                 !   Setup the base phi grid in case the 
                 !   uPer offset is too large for the bessel
@@ -667,14 +671,197 @@ contains
 
                     f_vv_update   = f_vv_update / normFac * weightMod
 
-                    f_rzvv(R_start(ii),z_start(ii),vPerL(ii):vPerR(ii),vParL(ii):vParR(ii))  = &
-                        f_rzvv(R_start(ii),z_start(ii),vPerL(ii):vPerR(ii),vParL(ii):vParR(ii)) &
+                    f_rzvv(R_L(ii),Z_L(ii),vPerL(ii):vPerR(ii),vParL(ii):vParR(ii))  = &
+                        f_rzvv(R_L(ii),Z_L(ii),vPerL(ii):vPerR(ii),vParL(ii):vParR(ii)) &
                         + dtArray(ii) / tau &
                         * f_vv_update(vPerL(ii):vPerR(ii),vParL(ii):vParR(ii)) 
 
                 endif 
 
                 end do 
+
+            else if(gParticle4D) then
+
+                if(vPer_nBins<64.or.vPar_nBins<128)then
+                    write(*,*) 'ERROR : When using gParticle = .true. you need a fine v-space grid'
+                    write(*,*) 'Please set ...'
+                    write(*,*) 'vPer_nBins = 64'
+                    write(*,*) 'vPar_nBins = 128'
+                    stop
+                endif
+
+                !   Loop only over a few cells around the particle location, 
+                !   otherwise this is prohibitavely slow. Its already a factor
+                !   of 10 slower than using the delta functions above :-(
+    
+                vPerL = int(vPer_index)-nGV
+                where (vPerL < 1) vPerL = 1
+                vPerR  = int(vPer_index)+nGV
+                where (vPerR > vPer_nBins) vPerR = vPer_nBins
+     
+                vParL = int(vPar_index)-nGV
+                where (vParL < 1) vParL = 1
+                vParR  = int(vPar_index)+nGV
+                where (vParR > vPar_nBins) vParR = vPar_nBins
+     
+                R_L = int(R_index)-nGX
+                where (R_L < 1) R_L = 1
+                R_R  = int(R_index)+nGX
+                where (R_R > R_nBins) R_R = R_nBins
+
+                Z_L = int(z_index)-nGX
+                where (Z_L < 1) Z_L = 1
+                Z_R  = int(z_index)+nGX
+                where (Z_R > z_nBins) Z_R = z_nBins
+
+                !   Calculate normFac for full particle size,
+                !   No bessel function required here since the
+                !   vPer offset = 0, i.e., besselI(0,0,)=1.0
+  
+                f_rzvv_update = 0.0 
+             
+                !   Setup the base phi grid in case the 
+                !   uPer offset is too large for the bessel
+                !   function.
+
+                phiBase = (/ (i*1.0,i=-10,10,1) /) / 10.0
+ 
+                do ii=1,stepCnt,stride          
+
+                normFac = normFac_ * rTrack(ii) ! not sure why this Jacobian was here?
+   
+                f_rzvv_update = 0.0
+
+                do m=R_L(ii),R_R(ii)
+                do n=Z_L(ii),Z_R(ii)
+                do i=vPerL(ii),vPerR(ii)
+                do j=vParL(ii),vParR(ii)
+
+                    m_ = m-R_L(1)+1
+                    n_ = n-Z_L(1)+1
+                    i_ = i-vPerL(1)+1
+                    j_ = j-vParL(1)+1
+
+                    !   If we end up with Infinity type nonsense poping up
+                    !   in the distribution function I would suggest
+                    !   altering this step so it does not consider particles
+                    !   located outside the chosen vPer/vPar range.
+ 
+                    bArg    =  vPerTrack(ii) * vPer_binCenters(i) / v_sigma**2
+
+                    if ( bArg < 650 ) then
+
+                        bF = bessI ( 0, real(bArg,dbl) )
+                   
+                        expTerm_D   = exp ( real ( &
+                                - ( vPerTrack(ii)**2 + ( vParTrack(ii) - vPar_binCenters(j) )**2  &
+                                + vPer_binCenters(i)**2 ) &
+                                / ( 2.0 * v_sigma**2 ) &
+                                , dbl ) ) 
+
+                        expTermX = exp ( - ( (rTrack(ii)-r_binCenters(m))**2  + (zTrack(ii)-z_binCenters(n))**2 ) &
+                                / ( 2d0 * x_sigma**2 ) ) 
+
+                        result_D    = expTermX * expTerm_D * bF * 2d0 * real(pi,dbl)
+                        f_rzvv_update(m_,n_,i_,j_)  = result_D
+
+                        !   This is a catch for when the modified bessel
+                        !   function returns +Infinity
+
+                        if ( bF > 1d300 ) then
+                         
+                            write(*,*) 'Bad'
+ 
+                            f_rzvv_update(m_,n_,i_,j_)  = 0.0 
+ 
+                        end if
+
+                    else    ! do the gyro angle integral the old fashioned way
+
+                        write(*,*) 'Ouch'
+
+                        !   but use an adaptive range for the phi
+                        !   integral depending on the value of vPerTrack.
+                        !   Oh yes, this is brilliant!
+
+                        phiRange    = 2.5 * v_sigma / vPerTrack(ii)     
+                        phi = phiBase * phiRange
+                        phi0    = 0.0
+
+                        vX  = vPer_binCenters(i) * cos ( phi )
+                        vY  = vPer_binCenters(i) * sin ( phi )
+                        vZ  = vPar_binCenters(j)
+
+                        vX0 = vPerTrack(ii) * cos ( phi0 )
+                        vY0 = vPerTrack(ii) * sin ( phi0 )
+                        vZ0 = vParTrack(ii)
+
+                        expTermX = exp ( - ( rTrack(ii)**2  + zTrack(ii)**2 ) / ( 2d0 * x_sigma**2 ) ) 
+
+                        f_rzvv_update(m_,n_,i_,j_)   = expTermX * sum ( &
+                            exp ( -1.0 * &
+                                  ( ( vX - vX0 )**2 + ( vY - vY0 )**2 + ( vZ - vZ0 )**2 ) & 
+                                        / ( 2.0 * v_sigma**2 ) ) &
+                            ) * abs ( phi(1) - phi(2) )
+
+                    end if
+ 
+                enddo
+                enddo
+                enddo
+                enddo
+               
+                !   Normalise and add
+
+                if ( normFac == 0 .or. tau == 0 ) then
+                
+                    write (*,*) 'DLG: ERROR, normFac == 0 or tau == 0 '
+                    write (*,*) normFac, normFac_, tau, v_sigma**2
+                    stop
+                else
+
+                    f_rzvv_update = f_rzvv_update / normFac! * weightMod
+
+                    f_rzvv(R_L(ii):R_R(ii),Z_L(ii):Z_R(ii),vPerL(ii):vPerR(ii),vParL(ii):vParR(ii))  = &
+                        f_rzvv(R_L(ii):R_R(ii),Z_L(ii):Z_R(ii),vPerL(ii):vPerR(ii),vParL(ii):vParR(ii)) &
+                        + dtArray(ii) / tau &
+                        * f_rzvv_update(1:m_,1:n_,1:i_,1:j_) 
+
+                endif 
+
+                end do 
+
+            else
+
+                do ss=1,stepCnt
+                    
+                    if ( int(R_index(ss)) <= R_nBins .and. int(R_index(ss)) >= 1 .and. &
+                        int(z_index(ss)) <= z_nBins .and. int(z_index(ss)) >= 1 .and. &
+                        int(vPer_index(ss)) <= vPer_nBins .and. int(vPer_index(ss)) >= 1 .and. &
+                        int(vPar_index(ss)) <= vPar_nBins .and. int(vPar_index(ss)) >= 1 ) then 
+
+                        dV_ = vPer_binCenters(int(vPer_index(ss))) * rTrack(ss) * &
+                            4.0 * pi**2 * R_binSize * z_binSize * &
+                            vPer_binSize * vPar_binSize  
+                   
+                        f_rzvv(int(R_index(ss)),int(z_index(ss)), &
+                               int(vPer_index(ss)),int(vPar_index(ss))) &
+                           = f_rzvv(int(R_index(ss)),int(z_index(ss)), &
+                               int(vPer_index(ss)),int(vPar_index(ss))) + dtArray(ss) / tau * weightMod / dV_
+                    
+                    else
+#if DEBUG_LEVEL>1  
+                        write(*,*) 'Off vPer Grid: ', vPer_index(ss), vPer_nBins
+                        write(*,*) 'Off vPar Grid: ', vPar_index(ss), vPar_nBins
+                        write(*,*) 'Off R Grid: ', R_index(ss), R_nBins
+                        write(*,*) 'Off z Grid: ', z_index(ss), z_nBins
+                        write(*,*) 'R: ', rTrack(ss), r_min, r_max, r_range 
+#endif
+                        nP_off_vGrid    = nP_off_vGrid + dtArray(ss) / tau
+
+                    end if
+                
+                end do
 
             end if    
         

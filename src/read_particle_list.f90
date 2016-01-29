@@ -9,7 +9,7 @@ contains
     subroutine read_pl ()
         use constants
         use init_mpi
-        use mpi
+        !use mpi
         use read_namelist
         use netcdf
         use dlg
