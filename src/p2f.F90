@@ -29,6 +29,7 @@ program p2f
     call start_mpi ()
     call read_pl ()    
     call init_rzvv_grid ()
+    call SetNormFac()
 
     call cpu_time (T1)
 
@@ -84,7 +85,6 @@ program p2f
     call cpu_time (T2)
  
     if ( mpi_pId == 1 ) then
-
 
         write (*,*) 'Time taken: ', T2-T1 
         write (*,'(a,f5.2,a)') 'TookMaxStepsBeforeBounce:      ', &

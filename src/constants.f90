@@ -8,7 +8,7 @@ module constants
     real, parameter :: c = 3.0e8
     real :: q 
     real, parameter :: pi = 3.14159265
-    integer, parameter :: dp = selected_real_kind(15,307)
+    integer, parameter :: dbl = selected_real_kind ( p=13, r = 200 ) 
    
 contains
     subroutine set_constants 

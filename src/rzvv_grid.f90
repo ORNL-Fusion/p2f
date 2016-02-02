@@ -1,5 +1,8 @@
 module rzvv_grid
+    use constants
+
     implicit none
+
     save
     
     real :: R_range, z_Range, vPer_range, vPar_range
@@ -16,6 +19,8 @@ module rzvv_grid
 
     real, allocatable :: f_rzvv (:,:,:,:), f_rzvv_global(:,:,:,:)
     real, allocatable :: density (:,:)
+    real :: normFac_
+    real(kind=dbl) :: v_sigma, x_sigma
 
 contains
     subroutine init_rzvv_grid ()

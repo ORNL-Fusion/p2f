@@ -110,6 +110,86 @@ contains
     
     end function dlg_interpB
 
+    subroutine SetNormFac()
+        use init_mpi
+        use read_namelist, nGV=>nGridPtsGaussianVSpace, nGX=>nGridPtsGaussianXSpace
+        use rzvv_grid
+        use constants
+
+        implicit none
+
+        real :: GetNormFac
+        real(kind=dbl) :: f_vv_update(vPer_nBins,vPar_nBins)
+        real(kind=dbl) :: dV(vPer_nBins,vPar_nBins), dV_, this_dV, this_f
+        integer :: i,j,m,n
+        real :: RCenter, ZCenter
+
+        ! Calculate the normalization factor of a particle 
+
+        normFac_ = 0.0
+
+        if(gParticle)then
+    
+            v_sigma = particleSize * c
+ 
+            !   Calculate normFac for full particle size,
+            !   No bessel function required here since the
+            !   vPer offset = 0, i.e., besselI(0,0,)=1.0
+  
+            f_vv_update = 0.0 
+            do i=1,vPer_nBins
+                do j=1,vPar_nBins
+                
+                    f_vv_update(i,j) =  exp ( &
+                            - ( vPer_binCenters(i)**2  &
+                            + vPar_binCenters(j)**2 ) &
+                            / ( 2d0 * v_sigma**2 ) &
+                            ) * 2d0 * pi  
+                            
+                    dV(i,j) = vPer_binCenters(i) * &
+                        4.0 * pi**2 * R_binSize * z_binSize * &
+                        vPer_binSize * vPar_binSize  
+                end do
+            end do
+            
+            normFac_ = sum ( f_vv_update * dV )  
+
+        else if(gParticle4D)then
+    
+            x_sigma = particleSizeX
+            v_sigma = particleSize * c
+ 
+            !do m=max(r_nBins/2-nGX,1),min(r_nBins/2+nGX,r_nBins)
+            !do n=max(z_nBins/2-nGX,1),min(z_nBins/2+nGX,z_nBins)
+            !do i=max(vPer_nBins/2-nGV,1),min(vPer_nBins/2+nGV,vPer_nBins)
+            !do j=max(vPar_nBins/2-nGV,1),min(vPar_nBins/2+nGV,vPar_nBins)
+            do m=1,r_nBins
+            do n=1,z_nBins
+            do i=1,vPer_nBins
+            do j=1,vPar_nBins
+               
+                RCenter = (R_max-R_min)/2 + R_min
+                ZCenter = (Z_max-Z_min)/2 + Z_min
+     
+                this_f =  &
+                    exp ( - ( vPer_binCenters(i)**2  + vPar_binCenters(j)**2 ) / ( 2d0 * v_sigma**2 ) ) &
+                  * exp ( - ( (RCenter-r_binCenters(m))**2  + (ZCenter-z_binCenters(n))**2 ) / ( 2d0 * x_sigma**2 ) ) 
+                        
+                this_dV = r_binCenters(m) * vPer_binCenters(i) * &
+                    4.0 * pi**2 * R_binSize * z_binSize * &
+                    vPer_binSize * vPar_binSize  
+
+                normFac_ = normFac_ + this_f*this_dV
+
+            enddo
+            enddo
+            enddo
+            enddo
+
+        endif
+
+    end subroutine SetNormFac
+
     subroutine gc_orbit ( start_R, start_z, start_vPer, &
          start_vPar, weight, plot )
         use eqdsk
@@ -122,7 +202,6 @@ contains
         use read_namelist, nGV=>nGridPtsGaussianVSpace, nGX=>nGridPtsGaussianXSpace
         implicit none
        
-        integer, parameter :: dbl = selected_real_kind ( p=13, r = 200 ) 
         real, intent(IN) :: start_R, start_z,&
             start_vPer, start_vPar, &
             weight
@@ -153,10 +232,8 @@ contains
         real(kind=dbl) :: f_vv_update(vPer_nBins,vPar_nBins)
 	    real(kind=dbl), allocatable :: f_rzvv_update(:,:,:,:)
         real(kind=dbl) :: dV(vPer_nBins,vPar_nBins), dV_, this_dV, this_f
-        
 
-        real(kind=dbl) :: v_sigma, x_sigma
-        real(kind=dbl) :: normFac, normFac_, bArg
+        real(kind=dbl) :: normFac, bArg
         real(kind=dbl) :: bessi, bF, result_D, expTerm_D, expTermX
 
         !   if you change this you need to alter
@@ -170,7 +247,7 @@ contains
         real :: theta, start_theta, theta_old, &
             theta_diff, theta_diff_old
         logical :: nearStart, skip_dtUpdate
-        real :: EStep, energy
+        real :: EStep, energy, RCenter, ZCenter
         integer :: stride, m, n, i_, j_, m_, n_
        
         !   Initialize variables
@@ -211,63 +288,6 @@ contains
             weightMod = 0.0
         endif
 
-        ! Calculate the normalization factor of a particle 
-
-        normFac_ = 0.0
-
-        if(gParticle)then
-    
-            v_sigma = particleSize * c
- 
-            !   Calculate normFac for full particle size,
-            !   No bessel function required here since the
-            !   vPer offset = 0, i.e., besselI(0,0,)=1.0
-  
-            f_vv_update = 0.0 
-            do i=1,vPer_nBins
-                do j=1,vPar_nBins
-                
-                    f_vv_update(i,j) =  exp ( &
-                            - ( vPer_binCenters(i)**2  &
-                            + vPar_binCenters(j)**2 ) &
-                            / ( 2d0 * v_sigma**2 ) &
-                            ) * 2d0 * pi  
-                            
-                    dV(i,j) = vPer_binCenters(i) * &
-                        4.0 * pi**2 * R_binSize * z_binSize * &
-                        vPer_binSize * vPar_binSize  
-                end do
-            end do
-            
-            normFac_ = sum ( f_vv_update * dV )  
-
-        else if(gParticle4D)then
-    
-            x_sigma = particleSizeX
-            v_sigma = particleSize * c
- 
-            do m=max(r_nBins/2-nGX,1),min(r_nBins/2+nGX,r_nBins)
-            do n=max(z_nBins/2-nGX,1),min(z_nBins/2+nGX,z_nBins)
-            do i=max(vPer_nBins/2-nGV,1),min(vPer_nBins/2+nGV,vPer_nBins)
-            do j=max(vPar_nBins/2-nGV,1),min(vPar_nBins/2+nGV,vPar_nBins)
-                
-                this_f =  &
-                    exp ( - ( vPer_binCenters(i)**2  + vPar_binCenters(j)**2 ) / ( 2d0 * v_sigma**2 ) ) &
-                  * exp ( - ( r_binCenters(m)**2  + z_binCenters(n)**2 ) / ( 2d0 * x_sigma**2 ) ) 
-                        
-                this_dV = r_binCenters(m) * vPer_binCenters(i) * &
-                    4.0 * pi**2 * R_binSize * z_binSize * &
-                    vPer_binSize * vPar_binSize  
-
-                normFac_ = normFac_ + this_f*this_dV
-
-            enddo
-            enddo
-            enddo
-            enddo
-
-        endif
- 
         if (.not.DistributeAlongOrbit) then
 
             NFO = .false.
@@ -753,7 +773,7 @@ contains
 
                         bF = bessI ( 0, real(bArg,dbl) )
                    
-                        expTerm_D   = exp ( real ( &
+                        expTerm_D = exp ( real ( &
                                 - ( vPerTrack(ii)**2 + ( vParTrack(ii) - vPar_binCenters(j) )**2  &
                                 + vPer_binCenters(i)**2 ) &
                                 / ( 2.0 * v_sigma**2 ) &
@@ -762,8 +782,8 @@ contains
                         expTermX = exp ( - ( (rTrack(ii)-r_binCenters(m))**2  + (zTrack(ii)-z_binCenters(n))**2 ) &
                                 / ( 2d0 * x_sigma**2 ) ) 
 
-                        result_D    = expTermX * expTerm_D * bF * 2d0 * real(pi,dbl)
-                        f_rzvv_update(m_,n_,i_,j_)  = result_D
+                        result_D = expTermX * expTerm_D * bF * 2d0 * real(pi,dbl)
+                        f_rzvv_update(m_,n_,i_,j_) = result_D
 
                         !   This is a catch for when the modified bessel
                         !   function returns +Infinity
@@ -820,7 +840,7 @@ contains
                     stop
                 else
 
-                    f_rzvv_update = f_rzvv_update / normFac! * weightMod
+                    f_rzvv_update = f_rzvv_update / normFac * weightMod
 
                     f_rzvv(R_L(ii):R_R(ii),Z_L(ii):Z_R(ii),vPerL(ii):vPerR(ii),vParL(ii):vParR(ii))  = &
                         f_rzvv(R_L(ii):R_R(ii),Z_L(ii):Z_R(ii),vPerL(ii):vPerR(ii),vParL(ii):vParR(ii)) &
