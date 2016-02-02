@@ -12,7 +12,7 @@ module init_mpi
     integer :: mpi_status_(MPI_STATUS_SIZE)
 #endif
     integer :: nP_wall, nP_bad, nP_off_vGrid, &
-        nP_badWeight, nP_badEnergy, nP_TookMaxStepsBeforeBounce
+        nP_badWeight, nP_badEnergy, nP_TookMaxStepsBeforeBounce, nP_mpiSum
     
 contains
     subroutine start_mpi ()
@@ -26,11 +26,16 @@ contains
         mpi_nP = nP / mpi_nProcs
         mpi_start_ = mpi_nP * mpi_pId + 1
         mpi_end_ = mpi_start_ + mpi_nP - 1
+
+        ! Add the remainder of the particles to the last mpi process.
+        if(nP-mpi_end_<mpi_nP)then
+            mpi_end_ = nP
+        endif
 #else
         mpi_nP = nP
         mpi_start_ = 1
         mpi_end_ = nP
-        mpi_pId = 1
+        mpi_pId = 0
 #endif
         nP_wall = 0
         nP_bad  = 0
@@ -38,8 +43,9 @@ contains
         nP_badWeight    = 0
         nP_badEnergy    = 0
         nP_TookMaxStepsBeforeBounce = 0
+        nP_mpiSum = mpi_end_-mpi_start_+1
 
-        if(mpi_pId==1) write (*,*) 'Division: ', mpi_start_, mpi_end_
+        if(mpi_pId==0) write (*,*) 'Division: ', mpi_start_, mpi_end_
         
     end subroutine start_mpi
     

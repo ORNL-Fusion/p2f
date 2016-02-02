@@ -541,7 +541,7 @@ contains
         if (.not.DistributeAlongOrbit) stride = 1
 
 #if DEBUG_LEVEL>0 
-        if(mpi_pId==1) write(*,*) "Stride : ", stride
+        if(mpi_pId==0) write(*,*) "Stride : ", stride
 #endif
         
         tau = tau / stride
@@ -599,12 +599,10 @@ contains
      
                 R_L = int(R_index)!-nGX
                 where (R_L < 1) R_L = 1
-                !R_R  = int(R_index)!+nGX
                 where (R_L > R_nBins) R_L = R_nBins
 
                 Z_L = int(z_index)!-nGX
                 where (Z_L < 1) Z_L = 1
-                !Z_R  = int(z_index)!+nGX
                 where (Z_L > z_nBins) Z_L = z_nBins
 
 
@@ -639,6 +637,7 @@ contains
                                     + vPer_binCenters(i)**2 ) &
                                     / ( 2.0 * v_sigma**2 ) &
                                     , dbl ) ) 
+
                             result_D    = expTerm_D * bF * 2d0 * real(pi,dbl)
                             f_vv_update(i,j)  = result_D
 
@@ -766,13 +765,13 @@ contains
                     !   in the distribution function I would suggest
                     !   altering this step so it does not consider particles
                     !   located outside the chosen vPer/vPar range.
- 
-                    bArg    =  vPerTrack(ii) * vPer_binCenters(i) / v_sigma**2
+
+                    bArg = vPerTrack(ii) * vPer_binCenters(i) / v_sigma**2
 
                     if ( bArg < 650 ) then
 
                         bF = bessI ( 0, real(bArg,dbl) )
-                   
+                  
                         expTerm_D = exp ( real ( &
                                 - ( vPerTrack(ii)**2 + ( vParTrack(ii) - vPar_binCenters(j) )**2  &
                                 + vPer_binCenters(i)**2 ) &

@@ -1,4 +1,4 @@
-PARALLEL:=0
+PARALLEL:=1
 
 OBJ = obj
 SRC := src

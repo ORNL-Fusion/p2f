@@ -17,7 +17,7 @@ program p2f
     integer :: mpi_count_
     integer :: nP_wall_total, nP_bad_total, &
         nP_off_vGrid_total, nP_badWeight_total, nP_badEnergy_total, &
-        nP_TookMaxStepsBeforeBounce_total
+        nP_TookMaxStepsBeforeBounce_total, nP_mpiSum_total
     real :: tmpDensity, TotalNumberOfParticles 
 
     call init_namelist () 
@@ -35,7 +35,7 @@ program p2f
 
     do i=mpi_start_,mpi_end_
  
-        if ( mod ( i, 100 ) == 0 .and. mpi_pId == 1 ) &
+        if ( mod ( i, 100 ) == 0 .and. mpi_pId == 0 ) &
             write(*,*) nP, mpi_nP, i, p_R(i), p_z(i), p_vPer(i), p_vPar(i)
 
         if ( p_weight(i) > 0 ) &
@@ -67,6 +67,7 @@ program p2f
     call mpi_reduce ( nP_badEnergy, nP_badEnergy_total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
     call mpi_reduce ( nP_TookMaxStepsBeforeBounce, &
             nP_TookMaxStepsBeforeBounce_total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
+    call mpi_reduce ( nP_mpiSum, nP_mpiSum_total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, mpi_iErr )
 #else
     nP_wall_total = nP_wall
     nP_bad_total = nP_bad
@@ -74,19 +75,21 @@ program p2f
     nP_badWeight_total = nP_badWeight
     nP_badEnergy_total = nP_badEnergy
     nP_TookMaxStepsBeforeBounce_total = nP_TookMaxStepsBeforeBounce
+    nP_mpiSum_total = nP_mpiSum
 #endif
 
     ! Test the reduction operation
-    if(mpi_pId==1) write (*,*) 'Stopping MPI' 
+    if(mpi_pId==0) write (*,*) 'Stopping MPI' 
 #if PARALLEL==1
     call stop_mpi () 
 #endif
-    if(mpi_pId==1) write(*,*) 'Getting CPU time'   
+    if(mpi_pId==0) write(*,*) 'Getting CPU time'   
     call cpu_time (T2)
  
-    if ( mpi_pId == 1 ) then
+    if(mpi_pId==0) then
 
         write (*,*) 'Time taken: ', T2-T1 
+        write (*,*) 'Total number of particles: ', nP_mpiSum_total
         write (*,'(a,f5.2,a)') 'TookMaxStepsBeforeBounce:      ', &
                 real ( nP_TookMaxStepsBeforeBounce_total ) / real ( nP ) * 100.0, '%', &
                 '   *** this means you need a larger MaxSteps'
