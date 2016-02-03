@@ -23,7 +23,9 @@ gParticle = .false.
 ```
 lap101336:Cmod_case dg6$ mpirun -n 4 ~/code/p2f/xp2f.lap101336
 ...
- Time taken:   0.243772984
+ Time taken:    1.46319294
+ Total number of particles:        10000
+Outside the rbbbs/zbbbs box:  0.00%
 TookMaxStepsBeforeBounce:       0.00%
    *** this means you need a larger MaxSteps
 Wall:       0.00%
@@ -32,12 +34,13 @@ off_vGrid:   0.000%   *** only applicable for gParticle = .false.
 badWeight:  0.00%
 badEnergy:  0.00%
 Suggested eNorm:  46.2 keV
-max ( density ): 0.20E+14
+max ( density ): 0.50E+14
+TotalNumberOfParticles: 0.91E+13
 ```
 We can then run the IDL post processing script to look at the result
 ```
 IDL>plot_p2f
-Total number of particles :   9.05868e+12
+Total number of particles :   9.05862e+12
 ```
 ![No smoothing f0](https://github.com/dlg0/p2f/blob/master/example/Cmod_case/p2f_f0-0.png)
 <img src="https://github.com/dlg0/p2f/blob/master/example/Cmod_case/p2f_profiles-0.png" width="600px">
@@ -50,21 +53,23 @@ gParticle = .false.
 ```
 lap101336:Cmod_case dg6$ mpirun -n 4 ~/code/p2f/xp2f.lap101336
 ...
- Time taken:    23.9451637
+ Time taken:    6.24949074
+ Total number of particles:        10000
+Outside the rbbbs/zbbbs box:  0.02%
 TookMaxStepsBeforeBounce:       0.00%
    *** this means you need a larger MaxSteps
-Wall:       4.88%
+Wall:       4.68%
 Bad:        0.00%
 off_vGrid:   0.000%   *** only applicable for gParticle = .false.
 badWeight:  0.00%
 badEnergy:  0.00%
 Suggested eNorm:  46.2 keV
- Getting CPU time
-max ( density ): 0.12E+14
+max ( density ): 0.17E+14
+TotalNumberOfParticles: 0.86E+13
 ```
 ```
 IDL>plot_p2f
-Total number of particles :   8.61599e+12
+Total number of particles :   8.63503e+12
 ```
 The number of total particles is LOWER here by the 4.69% that were lost due to their orbits going outside the LCFS, i.e., they should never have really been in the particle list in the first place.
 ![No smoothing](https://github.com/dlg0/p2f/blob/master/example/Cmod_case/p2f_f0-1.png)
@@ -79,21 +84,23 @@ particleSize = 4.0e-04
 ```
 lap101336:Cmod_case dg6$ mpirun -n 4 ~/code/p2f/xp2f.lap101336
 ...
- Time taken:    221.696213
+ Time taken:    34.6992073
+ Total number of particles:        10000
+Outside the rbbbs/zbbbs box:  0.02%
 TookMaxStepsBeforeBounce:       0.00%
    *** this means you need a larger MaxSteps
-Wall:       4.88%
+Wall:       4.68%
 Bad:        0.00%
 off_vGrid:   0.000%   *** only applicable for gParticle = .false.
 badWeight:  0.00%
 badEnergy:  0.00%
 Suggested eNorm:  46.2 keV
- Getting CPU time
-max ( density ): 0.12E+14
+max ( density ): 0.17E+14
+TotalNumberOfParticles: 0.86E+13
 ```
 ```
 IDL>plot_p2f
-Total number of particles :   8.57338e+12
+Total number of particles :   8.57142e+12
 ```
 ![No smoothing](https://github.com/dlg0/p2f/blob/master/example/Cmod_case/p2f_f0-2.png)
 <img src="https://github.com/dlg0/p2f/blob/master/example/Cmod_case/p2f_profiles-2.png" width="600px">
