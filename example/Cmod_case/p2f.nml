@@ -1,26 +1,27 @@
 &P2FIN
 nP = 10000
-DistributeAlongOrbit = .true.
-gParticle = .true.
+DistributeAlongOrbit = .false.
+gParticle = .false.
 gParticle4D = .false.
+useBesselFunction = .true.
 particleSize = 4.0e-04
 particleSizeX = 0.03
-pl_fileName = "plist_cmod_new.cdf"
+pl_fileName = "pl.nc"
 eqdsk_fileName = "eqdsk"
 vPerInRange = 1.0
 vParInRange = 0.5
 vPer_nBins = 64 
 vPar_nBins = 128 
-R_nBins = 32 
-z_nBins = 64 
+R_nBins = 64 
+z_nBins = 128 
 amu = 1.0
 AtomicZ = 1.0
 NFO = .true.
 pList_is_nCDF = .true.
-nGridPtsGaussianVSpace = 20 
-nGridPtsGaussianXSpace = 20
+nGridPtsGaussianVSpace = 15 
+nGridPtsGaussianXSpace = 15
 weightLimit = 5.0e18
 plotOrbit = .false.
 traceStepLength = 0.002
-usePtsPerTrack = 9999
+usePtsPerTrack = 9999 
 /

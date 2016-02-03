@@ -12,7 +12,8 @@ module init_mpi
     integer :: mpi_status_(MPI_STATUS_SIZE)
 #endif
     integer :: nP_wall, nP_bad, nP_off_vGrid, &
-        nP_badWeight, nP_badEnergy, nP_TookMaxStepsBeforeBounce, nP_mpiSum
+        nP_badWeight, nP_badEnergy, nP_TookMaxStepsBeforeBounce, nP_mpiSum, &
+        nP_OutsideTheBox
     
 contains
     subroutine start_mpi ()
@@ -43,6 +44,7 @@ contains
         nP_badWeight    = 0
         nP_badEnergy    = 0
         nP_TookMaxStepsBeforeBounce = 0
+        nP_OutsideTheBox = 0
         nP_mpiSum = mpi_end_-mpi_start_+1
 
         if(mpi_pId==0) write (*,*) 'Division: ', mpi_start_, mpi_end_

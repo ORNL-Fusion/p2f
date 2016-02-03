@@ -151,354 +151,355 @@ endif
 	if iiBadCnt gt 0 then wPerp[iiBad] = 0
 	if iiBadCnt gt 0 then wPar[iiBad] = 0
 
-
-;	Create flux surface averaged quantities
-
-;--------------------------------------------
-;	Create a density_m3 profile
-
-	density_m3_all	= 0.0
-	wperp_all	= 0.0
-	wpar_all	= 0.0
-
-	R_all	= 0.0
-	z_all	= 0.0
-
-	maskIn	= intArr ( size (density_m3) )
-
-	print, 'Create flux surface average f'
-	for i = 0, R_nBins-1 do begin
-		for j = 0, z_nBins - 1 do begin
-
-	    q1_  = where ( ( R_binCenters[i] - eqdsk.rbbbs gt 0 ) and ( z_binCenters[j] - eqdsk.zbbbs gt 0 ), q1 )
-	    q2_  = where ( ( R_binCenters[i] - eqdsk.rbbbs gt 0 ) and ( z_binCenters[j] - eqdsk.zbbbs le 0 ), q2 )
-	    q3_  = where ( ( R_binCenters[i] - eqdsk.rbbbs le 0 ) and ( z_binCenters[j] - eqdsk.zbbbs gt 0 ), q3 )
-	    q4_  = where ( ( R_binCenters[i] - eqdsk.rbbbs le 0 ) and ( z_binCenters[j] - eqdsk.zbbbs le 0 ), q4 )
-
-	    if ( q1 gt 0 ) and ( q2 gt 0 ) and ( q3 gt 0 ) and ( q4 gt 0 ) then begin
-
-			if (size(f_vv_all,/dim))[0] eq 0 then f_vv_all = reform(f_rzvv[i,j,*,*]) $
-				else f_vv_all = [ [[ f_vv_all ]], [[ reform ( f_rzvv[i,j,*,*] ) ]] ]
-			
-			density_m3_all	= [ density_m3_all, density_m3[i,j] ]
-			wperp_all	= [ wperp_all, wperp[i,j] ]
-			wpar_all	= [ wpar_all, wpar[i,j] ]
-
-			R_all	= [ R_all, R_binCenters[i] ]
-			z_all	= [ z_all, z_binCenters[j] ]
-
-		endif
-
-	    endfor 
-	
-	endfor
-
-	density_m3_all	= density_m3_all[1:*]
-	wperp_all	= wperp_all[1:*]
-	wpar_all	= wpar_all[1:*]
-
-	R_all	= R_all[1:*]
-	z_all	= Z_all[1:*]
- 
-	psi_all = interpolate ( eqdsk.psizr, ( R_all - eqdsk.rleft ) / eqdsk.rdim * eqdsk.nW, $
-    			( z_all - min ( eqdsk.z ) ) / eqdsk.zdim * eqdsk.nH )
-
-	psiRange	= abs ( eqdsk.siMag - eqdsk.siBry )
-	psiNorm_all	= ( psi_all - eqdsk.siMag ) / psiRange			
-
-	rho_all	= sqrt ( psiNorm_all )	
-
 	R_binCenters2D	= rebin ( R_binCenters, R_nBins, z_nBins )
 	z_binCenters2D	= transpose ( rebin ( z_binCenters, z_nBins, R_nBins ) )	
-	psi_2D = interpolate ( eqdsk.psizr, ( R_binCenters2D - eqdsk.rleft ) / eqdsk.rdim * eqdsk.nW, $
-    			( z_binCenters2D - min ( eqdsk.z ) ) / eqdsk.zdim * eqdsk.nH )
 
-	psi_2D	= ( psi_2D - eqdsk.siMag ) / psiRange
 
-	;	Bin by rho coord.
-
-	rho_nBins	= R_nBins/1.5
-	rho_binEdges	= fIndGen ( rho_nBins+1 ) / rho_nBins 
-	dRho	= abs(rho_binEdges[1]-rho_binEdges[2])
-	rho_binCenters	= rho_binEdges[1:*] - dRho/2.0
-
-	density_m3_rho	= fltArr ( n_elements ( rho_binCenters ) )
-	wperp_rho	= fltArr ( n_elements ( rho_binCenters ) )
-	wpar_rho	= fltArr ( n_elements ( rho_binCenters ) )
-
-	f_vv_rho	= fltArr ( n_elements ( rho_binCenters ), vPer_nBins, vPar_nBins )
-
-	for i = 0, n_elements ( rho_binCenters ) - 1 do begin
-
-		iiDx	= where ( rho_all ge rho_binCenters[i] - dRho $
-							AND rho_all lt rho_binCenters[i] + dRho $
-							AND psiNorm_all le 1, cnt)
-		if cnt gt 0 then begin
-			density_m3_rho[i]	= total ( density_m3_all[ iiDx ] ) / cnt
-			wperp_rho[i]	= total ( wperp_all[ iiDx ] ) / cnt
-			wpar_rho[i]	= total ( wpar_all[ iiDx ] ) / cnt
-
-			if cnt eq 1 then $
-				f_vv_rho[i,*,*]	= f_vv_all[ *, *, iiDx ] $
-			else $
-				f_vv_rho[i,*,*]	= total ( f_vv_all[ *, *, iiDx ], 3 ) / cnt
-			;print, cnt
-		endif
-		
-	endfor
-
-	;	Write a netCDF file for f_vv_rho
-
-	print, 'Write netCDF file f_vv_rho.nc'
-	nc_id	= nCdf_create ( 'data/f_rho_vv.nc', /clobber )
-	nCdf_control, nc_id, /fill
-	
-	vPer_nBins_id	= nCdf_dimDef ( nc_id, 'vPer_nBins', vPer_nBins )
-	vPar_nBins_id	= nCdf_dimDef ( nc_id, 'vPar_nBins', vPar_nBins )
-	rho_nBins_id	= nCdf_dimDef ( nc_id, 'rho_nBins', rho_nBins )
-	
-	f_rho_vv_id	= nCdf_varDef ( nc_id, 'f_vv_rho', [ rho_nBins_id, vPer_nBins_id, vPar_nBins_id ], /float )
-	
-	nCdf_control, nc_id, /enDef
-	nCdf_varPut, nc_id, f_rho_vv_id, f_vv_rho
-	nCdf_close, nc_id
-
-	;	Create the analytical profile AORSA uses	
-
-	n0	= 2.2e18
-	nLim	= 2.0e17
-	alpha	= 1.5
-	beta_	= 1.0
-
-	;!n0	= 1.522e18
-	;!nLim	= 0.933e17
-	;!alpha	= 5.0
-	;!beta_	= 3.0
-
-	;n0	= 3.6e18
-	;nLim	= 10.8e17
-	;alpha	= 0.6
-	;beta_	= 1.4
-
-	print, 'Fit to get aorsa profile parameters'	
-	AA	= [nLim,n0,alpha,beta_]
-	iiKeep	= where ( psi_2D lt 0.9 )
-	density_m3Fit	= curveFit ( sqrt(psi_2D[iiKeep]), density_m3[iiKeep], density_m3[iiKeep]*0+1, AA, sigmaFit, $
-		   function_name = 'profile_fit', /noDeriv, status = status ) 
-
-	density_m3_rho_aorsaFIT	= aa[0]+ ( aa[1] - aa[0] )*(1d0-rho_binCenters^aa[3])^aa[2]
-	density_m3_rho_aorsa	= nLim + ( n0 - nLim )*(1d0-rho_binCenters^beta_)^alpha
-
-	old_dev = !D.name
-	set_plot, 'ps'
-	outfname	= 'data/profiles.eps'
-	print, 'Write data/profiles.eps'
-	device, filename=outfname, preview=0, /color, bits_per_pixel=8, $
-		xsize=10, ysize = 16,xoffset=.1, yoffset=.1, /encapsul
-	!p.charSize = 1.0
-	!p.multi	= [0,1,2]
-	plot, sqrt ( psi_2D ), density_m3/1e19, $
-		psym = 4, $
-		xtitle = 'rho', $
-		ytitle = 'density_m3 [m!U-3!N] x10!U19!N', $
-		xRange = [0, 1], $
-		color = 0, $
-		yRange = [0,0.3], $
-		yStyle = 1
-	loadct, 12, /silent
-	oPlot, rho_binCenters, density_m3_rho/1e19, $
-		color = 8*16-1, $
-		thick = 2.0
-	oPlot, rho_binCenters, density_m3_rho_aorsa/1e19,$
-		thick = 2.0, $
-		color = 1*16-1
-
-	if status eq 0 then begin
-	print, 'density_m3 fit successfull'
-	oPlot, rho_binCenters, density_m3_rho_aorsaFIT/1e19,$
-		thick = 2.0, $
-		color = 12*16-1
-	xyOuts, 0.1, 0.98, 'nLim x19: '+string(aa[0]/1e19,for='(f7.5)') $
-			+'  n0 x19: '+string(aa[1]/1e19,for='(f7.5)') $
-			+'  a: '+string(aa[2],for='(f4.2)') $
-			+'  b: '+string(aa[3],for='(f4.2)'), $
-		   /norm, $
-		   color = 12*16-1, $
-		   charSize = 0.8, $
-		   font = 0
-    endif else print, 'density_m3 fit UNSUCCESSFUL'
-
-;		plots, [0.7,0.7], [1.8,1.8], $
+;;	Create flux surface averaged quantities
+;
+;;--------------------------------------------
+;;	Create a density_m3 profile
+;
+;	density_m3_all	= 0.0
+;	wperp_all	= 0.0
+;	wpar_all	= 0.0
+;
+;	R_all	= 0.0
+;	z_all	= 0.0
+;
+;	maskIn	= intArr ( size (density_m3) )
+;
+;	print, 'Create flux surface average f'
+;	for i = 0, R_nBins-1 do begin
+;		for j = 0, z_nBins - 1 do begin
+;
+;	    q1_  = where ( ( R_binCenters[i] - eqdsk.rbbbs gt 0 ) and ( z_binCenters[j] - eqdsk.zbbbs gt 0 ), q1 )
+;	    q2_  = where ( ( R_binCenters[i] - eqdsk.rbbbs gt 0 ) and ( z_binCenters[j] - eqdsk.zbbbs le 0 ), q2 )
+;	    q3_  = where ( ( R_binCenters[i] - eqdsk.rbbbs le 0 ) and ( z_binCenters[j] - eqdsk.zbbbs gt 0 ), q3 )
+;	    q4_  = where ( ( R_binCenters[i] - eqdsk.rbbbs le 0 ) and ( z_binCenters[j] - eqdsk.zbbbs le 0 ), q4 )
+;
+;	    if ( q1 gt 0 ) and ( q2 gt 0 ) and ( q3 gt 0 ) and ( q4 gt 0 ) then begin
+;
+;			if (size(f_vv_all,/dim))[0] eq 0 then f_vv_all = reform(f_rzvv[i,j,*,*]) $
+;				else f_vv_all = [ [[ f_vv_all ]], [[ reform ( f_rzvv[i,j,*,*] ) ]] ]
+;			
+;			density_m3_all	= [ density_m3_all, density_m3[i,j] ]
+;			wperp_all	= [ wperp_all, wperp[i,j] ]
+;			wpar_all	= [ wpar_all, wpar[i,j] ]
+;
+;			R_all	= [ R_all, R_binCenters[i] ]
+;			z_all	= [ z_all, z_binCenters[j] ]
+;
+;		endif
+;
+;	    endfor 
+;	
+;	endfor
+;
+;	density_m3_all	= density_m3_all[1:*]
+;	wperp_all	= wperp_all[1:*]
+;	wpar_all	= wpar_all[1:*]
+;
+;	R_all	= R_all[1:*]
+;	z_all	= Z_all[1:*]
+; 
+;	psi_all = interpolate ( eqdsk.psizr, ( R_all - eqdsk.rleft ) / eqdsk.rdim * eqdsk.nW, $
+;    			( z_all - min ( eqdsk.z ) ) / eqdsk.zdim * eqdsk.nH )
+;
+;	psiRange	= abs ( eqdsk.siMag - eqdsk.siBry )
+;	psiNorm_all	= ( psi_all - eqdsk.siMag ) / psiRange			
+;
+;	rho_all	= sqrt ( psiNorm_all )	
+;
+;	psi_2D = interpolate ( eqdsk.psizr, ( R_binCenters2D - eqdsk.rleft ) / eqdsk.rdim * eqdsk.nW, $
+;    			( z_binCenters2D - min ( eqdsk.z ) ) / eqdsk.zdim * eqdsk.nH )
+;
+;	psi_2D	= ( psi_2D - eqdsk.siMag ) / psiRange
+;
+;	;	Bin by rho coord.
+;
+;	rho_nBins	= R_nBins/1.5
+;	rho_binEdges	= fIndGen ( rho_nBins+1 ) / rho_nBins 
+;	dRho	= abs(rho_binEdges[1]-rho_binEdges[2])
+;	rho_binCenters	= rho_binEdges[1:*] - dRho/2.0
+;
+;	density_m3_rho	= fltArr ( n_elements ( rho_binCenters ) )
+;	wperp_rho	= fltArr ( n_elements ( rho_binCenters ) )
+;	wpar_rho	= fltArr ( n_elements ( rho_binCenters ) )
+;
+;	f_vv_rho	= fltArr ( n_elements ( rho_binCenters ), vPer_nBins, vPar_nBins )
+;
+;	for i = 0, n_elements ( rho_binCenters ) - 1 do begin
+;
+;		iiDx	= where ( rho_all ge rho_binCenters[i] - dRho $
+;							AND rho_all lt rho_binCenters[i] + dRho $
+;							AND psiNorm_all le 1, cnt)
+;		if cnt gt 0 then begin
+;			density_m3_rho[i]	= total ( density_m3_all[ iiDx ] ) / cnt
+;			wperp_rho[i]	= total ( wperp_all[ iiDx ] ) / cnt
+;			wpar_rho[i]	= total ( wpar_all[ iiDx ] ) / cnt
+;
+;			if cnt eq 1 then $
+;				f_vv_rho[i,*,*]	= f_vv_all[ *, *, iiDx ] $
+;			else $
+;				f_vv_rho[i,*,*]	= total ( f_vv_all[ *, *, iiDx ], 3 ) / cnt
+;			;print, cnt
+;		endif
+;		
+;	endfor
+;
+;	;	Write a netCDF file for f_vv_rho
+;
+;	print, 'Write netCDF file f_vv_rho.nc'
+;	nc_id	= nCdf_create ( 'data/f_rho_vv.nc', /clobber )
+;	nCdf_control, nc_id, /fill
+;	
+;	vPer_nBins_id	= nCdf_dimDef ( nc_id, 'vPer_nBins', vPer_nBins )
+;	vPar_nBins_id	= nCdf_dimDef ( nc_id, 'vPar_nBins', vPar_nBins )
+;	rho_nBins_id	= nCdf_dimDef ( nc_id, 'rho_nBins', rho_nBins )
+;	
+;	f_rho_vv_id	= nCdf_varDef ( nc_id, 'f_vv_rho', [ rho_nBins_id, vPer_nBins_id, vPar_nBins_id ], /float )
+;	
+;	nCdf_control, nc_id, /enDef
+;	nCdf_varPut, nc_id, f_rho_vv_id, f_vv_rho
+;	nCdf_close, nc_id
+;
+;	;	Create the analytical profile AORSA uses	
+;
+;	n0	= 2.2e18
+;	nLim	= 2.0e17
+;	alpha	= 1.5
+;	beta_	= 1.0
+;
+;	;!n0	= 1.522e18
+;	;!nLim	= 0.933e17
+;	;!alpha	= 5.0
+;	;!beta_	= 3.0
+;
+;	;n0	= 3.6e18
+;	;nLim	= 10.8e17
+;	;alpha	= 0.6
+;	;beta_	= 1.4
+;
+;	print, 'Fit to get aorsa profile parameters'	
+;	AA	= [nLim,n0,alpha,beta_]
+;	iiKeep	= where ( psi_2D lt 0.9 )
+;	density_m3Fit	= curveFit ( sqrt(psi_2D[iiKeep]), density_m3[iiKeep], density_m3[iiKeep]*0+1, AA, sigmaFit, $
+;		   function_name = 'profile_fit', /noDeriv, status = status ) 
+;
+;	density_m3_rho_aorsaFIT	= aa[0]+ ( aa[1] - aa[0] )*(1d0-rho_binCenters^aa[3])^aa[2]
+;	density_m3_rho_aorsa	= nLim + ( n0 - nLim )*(1d0-rho_binCenters^beta_)^alpha
+;
+;	old_dev = !D.name
+;	set_plot, 'ps'
+;	outfname	= 'data/profiles.eps'
+;	print, 'Write data/profiles.eps'
+;	device, filename=outfname, preview=0, /color, bits_per_pixel=8, $
+;		xsize=10, ysize = 16,xoffset=.1, yoffset=.1, /encapsul
+;	!p.charSize = 1.0
+;	!p.multi	= [0,1,2]
+;	plot, sqrt ( psi_2D ), density_m3/1e19, $
+;		psym = 4, $
+;		xtitle = 'rho', $
+;		ytitle = 'density_m3 [m!U-3!N] x10!U19!N', $
+;		xRange = [0, 1], $
+;		color = 0, $
+;		yRange = [0,0.3], $
+;		yStyle = 1
+;	loadct, 12, /silent
+;	oPlot, rho_binCenters, density_m3_rho/1e19, $
+;		color = 8*16-1, $
+;		thick = 2.0
+;	oPlot, rho_binCenters, density_m3_rho_aorsa/1e19,$
+;		thick = 2.0, $
+;		color = 1*16-1
+;
+;	if status eq 0 then begin
+;	print, 'density_m3 fit successfull'
+;	oPlot, rho_binCenters, density_m3_rho_aorsaFIT/1e19,$
+;		thick = 2.0, $
+;		color = 12*16-1
+;	xyOuts, 0.1, 0.98, 'nLim x19: '+string(aa[0]/1e19,for='(f7.5)') $
+;			+'  n0 x19: '+string(aa[1]/1e19,for='(f7.5)') $
+;			+'  a: '+string(aa[2],for='(f4.2)') $
+;			+'  b: '+string(aa[3],for='(f4.2)'), $
+;		   /norm, $
+;		   color = 12*16-1, $
+;		   charSize = 0.8, $
+;		   font = 0
+;    endif else print, 'density_m3 fit UNSUCCESSFUL'
+;
+;;		plots, [0.7,0.7], [1.8,1.8], $
+;;			   color = 12*16-1, psym = 4 
+;;	   plots, [0.6,0.7], [1.6,1.6], $
+;;			   color = 10*16-1, thick=2
+;;	   xyOuts, 0.75, 1.8, 'orbit-rf', color = 0, charSize = 1
+;;	   xyOuts, 0.75, 1.6, 'cql3d', color = 1*16-1, charSize = 1
+;	
+;	plot, sqrt ( psi_2D ), wperp, $
+;		psym = 4, $
+;		xtitle = 'rho', $
+;		ytitle = 'wPerp/wPar [keV] per particle', $
+;		xRange = [0, 1], $
+;		color = 0, $
+;		yRange = [0,20], $
+;		yStyle = 1, /noData
+;	;oPlot, sqrt ( psi_2D ), wpar, $
+;	;		psym = 4, $
+;	;		color = 12*16-1
+;	oPlot, rho_binCenters, wperp_rho, $
+;		color = 8*16-1, $
+;		thick = 2.0
+;	oPlot, rho_binCenters, wpar_rho, $
+;		color = 12*16-1, $
+;		thick = 2.0
+;
+;	if keyword_set ( cql3d ) then begin
+;		oPlot, rho_cql3d[1:*], wPerp_cql3d[1:*], $
+;			   color = 1*16-1, $
+;			   thick = 2
+;		oPlot, rho_cql3d[1:*], wPar_cql3d[1:*], $
+;			   color = 10*16-1, $
+;			   thick = 2
+;	   plots, [0.5,0.5], [9,9], $
+;			   color = 0, psym = 4 
+;	   plots, [0.4,0.5], [8,8], $
+;			   color = 1*16-1, thick=2
+;	   plots, [0.5,0.5], [7,7], $
 ;			   color = 12*16-1, psym = 4 
-;	   plots, [0.6,0.7], [1.6,1.6], $
+;	   plots, [0.4,0.5], [6,6], $
 ;			   color = 10*16-1, thick=2
-;	   xyOuts, 0.75, 1.8, 'orbit-rf', color = 0, charSize = 1
-;	   xyOuts, 0.75, 1.6, 'cql3d', color = 1*16-1, charSize = 1
-	
-	plot, sqrt ( psi_2D ), wperp, $
-		psym = 4, $
-		xtitle = 'rho', $
-		ytitle = 'wPerp/wPar [keV] per particle', $
-		xRange = [0, 1], $
-		color = 0, $
-		yRange = [0,20], $
-		yStyle = 1, /noData
-	;oPlot, sqrt ( psi_2D ), wpar, $
-	;		psym = 4, $
-	;		color = 12*16-1
-	oPlot, rho_binCenters, wperp_rho, $
-		color = 8*16-1, $
-		thick = 2.0
-	oPlot, rho_binCenters, wpar_rho, $
-		color = 12*16-1, $
-		thick = 2.0
-
-	if keyword_set ( cql3d ) then begin
-		oPlot, rho_cql3d[1:*], wPerp_cql3d[1:*], $
-			   color = 1*16-1, $
-			   thick = 2
-		oPlot, rho_cql3d[1:*], wPar_cql3d[1:*], $
-			   color = 10*16-1, $
-			   thick = 2
-	   plots, [0.5,0.5], [9,9], $
-			   color = 0, psym = 4 
-	   plots, [0.4,0.5], [8,8], $
-			   color = 1*16-1, thick=2
-	   plots, [0.5,0.5], [7,7], $
-			   color = 12*16-1, psym = 4 
-	   plots, [0.4,0.5], [6,6], $
-			   color = 10*16-1, thick=2
-	   xyOuts, 0.55, 9, 'orbit-rf wPerp', color = 0, charSize = 1
-	   xyOuts, 0.55, 8, 'cql3d wPerp', color = 1*16-1, charSize = 1
-	   xyOuts, 0.55, 7, 'orbit-rf wPar', color = 12*16-1, charSize = 1
-	   xyOuts, 0.55, 6, 'cql3d wPar', color = 10*16-1, charSize = 1
-
-
-	
-	endif
-	device, /close_file
-
+;	   xyOuts, 0.55, 9, 'orbit-rf wPerp', color = 0, charSize = 1
+;	   xyOuts, 0.55, 8, 'cql3d wPerp', color = 1*16-1, charSize = 1
+;	   xyOuts, 0.55, 7, 'orbit-rf wPar', color = 12*16-1, charSize = 1
+;	   xyOuts, 0.55, 6, 'cql3d wPar', color = 10*16-1, charSize = 1
 ;
-;--------------------------------------------
-
-
-;--------------------------------------------
-;	Create a temperature profile by fitting 2D gaussian
-;	functions at each pt in space
-
-	if keyword_set ( temperature ) then begin
-
-	tempProfile	= fltArr ( R_nBins, z_nBins )
-	psiTemp2D	= fltArr ( R_nBins, z_nBins )
-	rhoTemp2D	= fltArr ( R_nBins, z_nBins )
-
-	print, 'Create temperature profile'
-	for i = 0, R_nBins-1 do begin
-		;print, i
-		for j = 0, z_nBins-1 do begin
-		
-			psiTemp2D[i,j] = interpolate ( eqdsk.psizr, $
-				( R_binCenters[i] - eqdsk.rleft ) / eqdsk.rdim * eqdsk.nW, $
-    			( z_binCenters[j] - min ( eqdsk.z ) ) / eqdsk.zdim * eqdsk.nH )
-
-			rhoTemp2D[i,j]	= sqrt ( ( psiTemp2D[i,j] - eqdsk.siMag ) / psiRange )	
-
-			tmp	= [reverse(reform(f_rzvv[i,j,*,*]),1),reform(f_rzvv[i,j,*,*])]
-			if mean ( tmp ) gt 0 then begin
-				fit	= gauss2dFit ( tmp, A )
-				tempProfile[i,j]	= mi * ( $
-					( A[2] * vPer_binsize )^2 + ( A[3] * vPar_binSize )^2 $
-						) / ( 2.0 * 1e3 * e_ )  
-			endif
-
-		endfor
-	endfor
-	
-	temp_rho	= fltArr ( n_elements ( rho_binCenters ) )
-
-	for i = 0, n_elements ( rho_binCenters ) - 1 do begin
-
-		iiDx	= where ( rhoTemp2D[*] ge rho_binCenters[i] - dRho $
-			AND rhoTemp2D[*] lt rho_binCenters[i] + dRho, cnt)
-		if cnt gt 0 then begin
-			temp_rho[i]	= total ( (tempProfile[*])[ iiDx ] )
-			temp_rho[i]	= temp_rho[i] / cnt
-			;print, cnt
-		endif
-		
-	endfor
-
-	temp_rho	= temp_rho * 1e3
-
-
-	;	Create the analytical profile AORSA uses	
-
-	t0	= 3.0e3 
-	tLim	= 0.052e3
-	alpha	= 1.3 
-	beta_	= 1.9
-
-	t0	= 24.0e3 
-	tLim	= 2.0e3
-	alpha	= 1.0 
-	beta_	= 2.8
-
-	;	Fit to get aorsa profile parameters
-
-	print, 'Fit to get aorsa profile parameters'	
-	maxTmp = 30.0*1e3;[keV]
-	iiKeep	= where ( tempProfile*1e3 lt maxTmp and rhoTemp2d lt 1.0 )
-	AA	= [tLim,t0,alpha,beta_]
-	tempFit	= curveFit ( rhoTemp2D[iiKeep], tempProfile[iiKeep]*1e3, tempProfile[iiKeep]*0+1, AA, sigmaFit, $
-		   function_name = 'profile_fit', /noDeriv, status = status ) 
-
-	temp_rho_aorsa	= tLim + ( t0 - tLim )*(1d0-rho_binCenters^beta_)^alpha
-	temp_rho_aorsaFIT	= aa[0]+ ( aa[1] - aa[0] )*(1d0-rho_binCenters^aa[3])^aa[2]
-
-	old_dev = !D.name
-	set_plot, 'ps'
-	outfname	= 'data/temp.eps'
-	print, 'Wrtie data/temp.eps'
-	device, filename=outfname, preview=0, /color, bits_per_pixel=8, $
-		xsize=10, ysize = 10,xoffset=.1, yoffset=.1, /encapsul
-	!p.charSize = 1.0
-	!p.multi	= 0 
-	
-	plot, rhoTemp2D, tempProfile, $
-		yTitle = 'temperature [keV]', $
-		xTitle = 'rho', $
-		thick = 1, $
-		color = 0, $
-		psym = 4, $
-		xRange = [0,1.0], $
-		xStyle = 1, $
-		yStyle = 1, $
-		yRange = [0, maxTmp/1e3]
-
-	oPlot, rho_binCenters, temp_rho_aorsa/1e3, $
-		psym = -4, $
-	 	color = 8*16-1, $
-		thick = 2
-
-	if status eq 0 then begin
-	print, 'Temperature fit successful'
-	oPlot,rho_binCenters, temp_rho_aorsaFIT/1e3, $
-		color = 12*16-1, $
-		thick = 2
-	xyOuts, 0.1, 0.95, 'tLim: '+string(aa[0]/1e3,for='(f4.2)') $
-			+'  t0: '+string(aa[1]/1e3,for='(f5.2)') $
-			+'  a: '+string(aa[2],for='(f4.2)') $
-			+'  b: '+string(aa[3],for='(f4.2)'), $
-		   /norm, $
-		   color = 12*16-1, $
-		   charSize = 1.0
-   	endif else print, 'Temperature fit UNSUCCESSFUL'
-
-   	device, /close_file
-
-	endif 
 ;
-;--------------------------------------------
+;	
+;	endif
+;	device, /close_file
+;
+;;
+;;--------------------------------------------
+;
+;
+;;--------------------------------------------
+;;	Create a temperature profile by fitting 2D gaussian
+;;	functions at each pt in space
+;
+;	if keyword_set ( temperature ) then begin
+;
+;	tempProfile	= fltArr ( R_nBins, z_nBins )
+;	psiTemp2D	= fltArr ( R_nBins, z_nBins )
+;	rhoTemp2D	= fltArr ( R_nBins, z_nBins )
+;
+;	print, 'Create temperature profile'
+;	for i = 0, R_nBins-1 do begin
+;		;print, i
+;		for j = 0, z_nBins-1 do begin
+;		
+;			psiTemp2D[i,j] = interpolate ( eqdsk.psizr, $
+;				( R_binCenters[i] - eqdsk.rleft ) / eqdsk.rdim * eqdsk.nW, $
+;    			( z_binCenters[j] - min ( eqdsk.z ) ) / eqdsk.zdim * eqdsk.nH )
+;
+;			rhoTemp2D[i,j]	= sqrt ( ( psiTemp2D[i,j] - eqdsk.siMag ) / psiRange )	
+;
+;			tmp	= [reverse(reform(f_rzvv[i,j,*,*]),1),reform(f_rzvv[i,j,*,*])]
+;			if mean ( tmp ) gt 0 then begin
+;				fit	= gauss2dFit ( tmp, A )
+;				tempProfile[i,j]	= mi * ( $
+;					( A[2] * vPer_binsize )^2 + ( A[3] * vPar_binSize )^2 $
+;						) / ( 2.0 * 1e3 * e_ )  
+;			endif
+;
+;		endfor
+;	endfor
+;	
+;	temp_rho	= fltArr ( n_elements ( rho_binCenters ) )
+;
+;	for i = 0, n_elements ( rho_binCenters ) - 1 do begin
+;
+;		iiDx	= where ( rhoTemp2D[*] ge rho_binCenters[i] - dRho $
+;			AND rhoTemp2D[*] lt rho_binCenters[i] + dRho, cnt)
+;		if cnt gt 0 then begin
+;			temp_rho[i]	= total ( (tempProfile[*])[ iiDx ] )
+;			temp_rho[i]	= temp_rho[i] / cnt
+;			;print, cnt
+;		endif
+;		
+;	endfor
+;
+;	temp_rho	= temp_rho * 1e3
+;
+;
+;	;	Create the analytical profile AORSA uses	
+;
+;	t0	= 3.0e3 
+;	tLim	= 0.052e3
+;	alpha	= 1.3 
+;	beta_	= 1.9
+;
+;	t0	= 24.0e3 
+;	tLim	= 2.0e3
+;	alpha	= 1.0 
+;	beta_	= 2.8
+;
+;	;	Fit to get aorsa profile parameters
+;
+;	print, 'Fit to get aorsa profile parameters'	
+;	maxTmp = 30.0*1e3;[keV]
+;	iiKeep	= where ( tempProfile*1e3 lt maxTmp and rhoTemp2d lt 1.0 )
+;	AA	= [tLim,t0,alpha,beta_]
+;	tempFit	= curveFit ( rhoTemp2D[iiKeep], tempProfile[iiKeep]*1e3, tempProfile[iiKeep]*0+1, AA, sigmaFit, $
+;		   function_name = 'profile_fit', /noDeriv, status = status ) 
+;
+;	temp_rho_aorsa	= tLim + ( t0 - tLim )*(1d0-rho_binCenters^beta_)^alpha
+;	temp_rho_aorsaFIT	= aa[0]+ ( aa[1] - aa[0] )*(1d0-rho_binCenters^aa[3])^aa[2]
+;
+;	old_dev = !D.name
+;	set_plot, 'ps'
+;	outfname	= 'data/temp.eps'
+;	print, 'Wrtie data/temp.eps'
+;	device, filename=outfname, preview=0, /color, bits_per_pixel=8, $
+;		xsize=10, ysize = 10,xoffset=.1, yoffset=.1, /encapsul
+;	!p.charSize = 1.0
+;	!p.multi	= 0 
+;	
+;	plot, rhoTemp2D, tempProfile, $
+;		yTitle = 'temperature [keV]', $
+;		xTitle = 'rho', $
+;		thick = 1, $
+;		color = 0, $
+;		psym = 4, $
+;		xRange = [0,1.0], $
+;		xStyle = 1, $
+;		yStyle = 1, $
+;		yRange = [0, maxTmp/1e3]
+;
+;	oPlot, rho_binCenters, temp_rho_aorsa/1e3, $
+;		psym = -4, $
+;	 	color = 8*16-1, $
+;		thick = 2
+;
+;	if status eq 0 then begin
+;	print, 'Temperature fit successful'
+;	oPlot,rho_binCenters, temp_rho_aorsaFIT/1e3, $
+;		color = 12*16-1, $
+;		thick = 2
+;	xyOuts, 0.1, 0.95, 'tLim: '+string(aa[0]/1e3,for='(f4.2)') $
+;			+'  t0: '+string(aa[1]/1e3,for='(f5.2)') $
+;			+'  a: '+string(aa[2],for='(f4.2)') $
+;			+'  b: '+string(aa[3],for='(f4.2)'), $
+;		   /norm, $
+;		   color = 12*16-1, $
+;		   charSize = 1.0
+;   	endif else print, 'Temperature fit UNSUCCESSFUL'
+;
+;   	device, /close_file
+;
+;	endif 
+;;
+;;--------------------------------------------
 
 
 	dVPer	= abs ( vPer_binEdges[0] - vPer_binEdges[1] )
@@ -920,7 +921,7 @@ p=plot(r,density_m3_file[*,slice],$
 	/over,color='r')
 p=plot(r,temp_eV[*,slice],$
 	title='temp [eV]',layout=[2,2,2],/current,$
-	margin=margin,font_size=font_size)
+	margin=margin,font_size=font_size,yrange=[0,max(temp_eV[*,slice])*1.2])
 c=contour(density_m3,r,z,$
 	/fill,rgb_table=51,layout=[2,2,3],/current,$
 	margin=margin,font_size=font_size)

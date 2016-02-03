@@ -1,8 +1,8 @@
 # Compiler
 F77 = mpif90
 F90	= mpif90  
-F90FLAGS += -Wall -g -fbacktrace -fbounds-check -J${MOD}
-FFLAGS += -fbacktrace -g
+F90FLAGS += -J${MOD} -O3 #-Wall -g -fbacktrace -fbounds-check 
+FFLAGS += -O3 #-fbacktrace -g
 
 # Dislin
 #DISLINDIR = /home/dg6/code/dislin/dislin_gnu_4.7.2

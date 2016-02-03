@@ -122,7 +122,7 @@ contains
         real(kind=dbl) :: f_vv_update(vPer_nBins,vPar_nBins)
         real(kind=dbl) :: dV(vPer_nBins,vPar_nBins), dV_, this_dV, this_f
         integer :: i,j,m,n
-        real :: RCenter, ZCenter
+        real :: RCenter, ZCenter, NormFacCheck
 
         ! Calculate the normalization factor of a particle 
 
@@ -159,10 +159,6 @@ contains
             x_sigma = particleSizeX
             v_sigma = particleSize * c
  
-            !do m=max(r_nBins/2-nGX,1),min(r_nBins/2+nGX,r_nBins)
-            !do n=max(z_nBins/2-nGX,1),min(z_nBins/2+nGX,z_nBins)
-            !do i=max(vPer_nBins/2-nGV,1),min(vPer_nBins/2+nGV,vPer_nBins)
-            !do j=max(vPar_nBins/2-nGV,1),min(vPar_nBins/2+nGV,vPar_nBins)
             do m=1,r_nBins
             do n=1,z_nBins
             do i=1,vPer_nBins
@@ -187,6 +183,75 @@ contains
             enddo
 
         endif
+
+        ! Calculate the volume of the same particle but on the reduced grid
+        ! to see if the particle size is OK.
+
+        normFacCheck = 0.0
+
+        if(gParticle)then
+    
+            v_sigma = particleSize * c
+ 
+            !   Calculate normFac for full particle size,
+            !   No bessel function required here since the
+            !   vPer offset = 0, i.e., besselI(0,0,)=1.0
+  
+            f_vv_update = 0.0 
+            do i=1,min(nGV+1,vPer_nBins)
+                do j=max(vPar_nBins/2-nGV,1),min(vPar_nBins/2+nGV,vPar_nBins)
+                
+                    f_vv_update(i,j) =  exp ( &
+                            - ( vPer_binCenters(i)**2  &
+                            + vPar_binCenters(j)**2 ) &
+                            / ( 2d0 * v_sigma**2 ) &
+                            ) * 2d0 * pi  
+                            
+                    dV(i,j) = vPer_binCenters(i) * &
+                        4.0 * pi**2 * R_binSize * z_binSize * &
+                        vPer_binSize * vPar_binSize  
+                end do
+            end do
+            
+            normFacCheck = sum ( f_vv_update * dV )  
+
+        else if(gParticle4D)then
+    
+            x_sigma = particleSizeX
+            v_sigma = particleSize * c
+ 
+            do m=max(r_nBins/2-nGX,1),min(r_nBins/2+nGX,r_nBins)
+            do n=max(z_nBins/2-nGX,1),min(z_nBins/2+nGX,z_nBins)
+            do i=1,min(nGV+1,vPer_nBins)
+            do j=max(vPar_nBins/2-nGV,1),min(vPar_nBins/2+nGV,vPar_nBins)
+               
+                RCenter = (R_max-R_min)/2 + R_min
+                ZCenter = (Z_max-Z_min)/2 + Z_min
+     
+                this_f =  &
+                    exp ( - ( vPer_binCenters(i)**2  + vPar_binCenters(j)**2 ) / ( 2d0 * v_sigma**2 ) ) &
+                  * exp ( - ( (RCenter-r_binCenters(m))**2  + (ZCenter-z_binCenters(n))**2 ) / ( 2d0 * x_sigma**2 ) ) 
+                        
+                this_dV = r_binCenters(m) * vPer_binCenters(i) * &
+                    4.0 * pi**2 * R_binSize * z_binSize * &
+                    vPer_binSize * vPar_binSize  
+
+                normFacCheck = normFacCheck + this_f*this_dV
+
+            enddo
+            enddo
+            enddo
+            enddo
+
+        endif
+
+        if(mpi_pId==0)then
+            write(*,*) 'NormFacCheck / NormFac_ : ', NormFacCheck / NormFac_
+            if(NormFacCheck/NormFac_<0.98)then
+                write(*,*) 'Problem : You need a larger nGridPtsGaussian*Space'
+            endif
+        endif
+
 
     end subroutine SetNormFac
 
@@ -248,7 +313,7 @@ contains
             theta_diff, theta_diff_old
         logical :: nearStart, skip_dtUpdate
         real :: EStep, energy, RCenter, ZCenter
-        integer :: stride, m, n, i_, j_, m_, n_
+        integer :: stride, m, n, i_, j_, m_, n_, iL,iR,jL,jR,mL,mR,nL,nR
        
         !   Initialize variables
       
@@ -294,6 +359,9 @@ contains
             firstOrbit = .false.
             rTrack(1) = start_R
             zTrack(1) = start_z
+            pos(1)  = start_R
+            pos(2)  = 0.0
+            pos(3)  = start_z
             vPerTrack(1) = start_vPer
             vParTrack(1) = start_vPar
             tau    = 1.0
@@ -370,34 +438,33 @@ contains
            
             pos   = pos + ( k1_vgc + 2.0 * k2_vgc + 2.0 * k3_vgc + k4_vgc ) / 6.0
 
-            if ( NFO ) then
-           
             ! No finite orbits 
+            if ( NFO ) then
  
-            vPer_n   = dlg_vPer ( pos_, u ) 
-            vgc_n = dlg_gc_velocity ( pos_, vPer_n, vPar_n, NFO = 1 )
-            k1_vPar_n   = dt * dlg_vPar ( pos_, u ) 
-            k1_vgc_n  = dt * vgc_n
-            
-            vPer_n   = dlg_vPer ( pos_ + k1_vgc_n / 2.0, u ) 
-            vgc_n = dlg_gc_velocity ( pos_ + k1_vgc_n / 2.0, vPer_n, vPar_n + k1_vPar_n / 2.0, NFO = 1 )
-            k2_vPar_n   = dt * dlg_vPar ( pos_ + k1_vgc_n / 2.0, u ) 
-            k2_vgc_n  = dt * vgc_n
+                vPer_n   = dlg_vPer ( pos_, u ) 
+                vgc_n = dlg_gc_velocity ( pos_, vPer_n, vPar_n, NFO = 1 )
+                k1_vPar_n   = dt * dlg_vPar ( pos_, u ) 
+                k1_vgc_n  = dt * vgc_n
+                
+                vPer_n   = dlg_vPer ( pos_ + k1_vgc_n / 2.0, u ) 
+                vgc_n = dlg_gc_velocity ( pos_ + k1_vgc_n / 2.0, vPer_n, vPar_n + k1_vPar_n / 2.0, NFO = 1 )
+                k2_vPar_n   = dt * dlg_vPar ( pos_ + k1_vgc_n / 2.0, u ) 
+                k2_vgc_n  = dt * vgc_n
            
-            vPer_n   = dlg_vPer ( pos_ + k2_vgc_n / 2.0, u ) 
-            vgc_n = dlg_gc_velocity ( pos_ + k2_vgc_n / 2.0, vPer_n, vPar_n + k2_vPar_n / 2.0, NFO = 1 )
-            k3_vPar_n   = dt * dlg_vPar ( pos_ + k2_vgc_n / 2.0, u ) 
-            k3_vgc_n  = dt * vgc_n
-            
-            vPer_n   = dlg_vPer ( pos_ + k3_vgc_n, u ) 
-            vgc_n = dlg_gc_velocity ( pos_ + k3_vgc_n, vPer_n, vPar_n + k3_vPar_n, NFO = 1 )
-            k4_vPar_n   = dt * dlg_vPar ( pos_ + k3_vgc_n, u ) 
-            k4_vgc_n  = dt * vgc_n
+                vPer_n   = dlg_vPer ( pos_ + k2_vgc_n / 2.0, u ) 
+                vgc_n = dlg_gc_velocity ( pos_ + k2_vgc_n / 2.0, vPer_n, vPar_n + k2_vPar_n / 2.0, NFO = 1 )
+                k3_vPar_n   = dt * dlg_vPar ( pos_ + k2_vgc_n / 2.0, u ) 
+                k3_vgc_n  = dt * vgc_n
+                
+                vPer_n   = dlg_vPer ( pos_ + k3_vgc_n, u ) 
+                vgc_n = dlg_gc_velocity ( pos_ + k3_vgc_n, vPer_n, vPar_n + k3_vPar_n, NFO = 1 )
+                k4_vPar_n   = dt * dlg_vPar ( pos_ + k3_vgc_n, u ) 
+                k4_vgc_n  = dt * vgc_n
            
-            vPar_n    = vPar_n + ( k1_vPar_n + 2.0 * k2_vPar_n + 2.0 * k3_vPar_n &
-                + k4_vPar_n ) / 6.0
+                vPar_n    = vPar_n + ( k1_vPar_n + 2.0 * k2_vPar_n + 2.0 * k3_vPar_n &
+                    + k4_vPar_n ) / 6.0
            
-            pos_   = pos_ + ( k1_vgc_n + 2.0 * k2_vgc_n + 2.0 * k3_vgc_n + k4_vgc_n ) / 6.0
+                pos_   = pos_ + ( k1_vgc_n + 2.0 * k2_vgc_n + 2.0 * k3_vgc_n + k4_vgc_n ) / 6.0
 
             endif
             
@@ -414,6 +481,10 @@ contains
                 if ( psi_here < sibry * 0.999 ) stillIn = .false.
             else
                 if ( psi_here > sibry * 0.999 ) stillIn = .false.
+            endif
+
+            if(pos(1)<r_min.or.pos(1)>r_max.or.pos(3)<z_min.or.pos(3)>z_max)then
+                stillIn = .false.
             endif
 
             if ( (.not. stillIn) .or. (.not. firstOrbit) .or. stepCnt >= maxSteps ) then
@@ -531,6 +602,14 @@ contains
 
 11      continue
 
+        ! Double check this in the case that there is no distribution along the orbit, 
+        ! i.e., effectively a bad particle list.
+
+        if(pos(1)<r_min.or.pos(1)>r_max.or.pos(3)<z_min.or.pos(3)>z_max)then
+            stillIn = .false.
+            nP_OutsideTheBox = nP_OutsideTheBox + 1
+        endif
+
         !   Introduce a stride over which to select points out
         !   of a track since we need a higher resolution track for
         !   tracing than we do for bounce averaging. Remember to 
@@ -582,30 +661,6 @@ contains
                     stop
                 endif
 
-               
-                !   Loop only over a few cells around the particle location, 
-                !   otherwise this is prohibitavely slow. Its already a factor
-                !   of 10 slower than using the delta functions above :-(
-    
-                vPerL = int(vPer_index)-nGV
-                where (vPerL < 1) vPerL = 1
-                vPerR  = int(vPer_index)+nGV
-                where (vPerR > vPer_nBins) vPerR = vPer_nBins
-     
-                vParL = int(vPar_index)-nGV
-                where (vParL < 1) vParL = 1
-                vParR  = int(vPar_index)+nGV
-                where (vParR > vPar_nBins) vParR = vPar_nBins
-     
-                R_L = int(R_index)!-nGX
-                where (R_L < 1) R_L = 1
-                where (R_L > R_nBins) R_L = R_nBins
-
-                Z_L = int(z_index)!-nGX
-                where (Z_L < 1) Z_L = 1
-                where (Z_L > z_nBins) Z_L = z_nBins
-
-
                 !   Setup the base phi grid in case the 
                 !   uPer offset is too large for the bessel
                 !   function.
@@ -618,8 +673,13 @@ contains
    
                 f_vv_update = 0.0
 
-                do i=vPerL(ii),vPerR(ii)
-                    do j=vParL(ii),vParR(ii)
+                iL = max(floor(vPer_index(ii))-nGV,1)
+                iR = min(floor(vPer_index(ii))+nGV,vPer_nBins)
+                jL = max(floor(vPar_index(ii))-nGV,1)
+                jR = min(floor(vPar_index(ii))+nGV,vPar_nBins)
+
+                do i=iL,iR
+                    do j=jL,jR
 
                         !   If we end up with Infinity type nonsense poping up
                         !   in the distribution function I would suggest
@@ -628,7 +688,7 @@ contains
  
                         bArg    =  vPerTrack(ii) * vPer_binCenters(i) / v_sigma**2
 
-                        if ( bArg < 650 ) then
+                        if ( bArg < 650 .and. useBesselFunction ) then
 
                             bF = bessI ( 0, real(bArg,dbl) )
                        
@@ -690,11 +750,10 @@ contains
 
                     f_vv_update   = f_vv_update / normFac * weightMod
 
-                    f_rzvv(R_L(ii),Z_L(ii),vPerL(ii):vPerR(ii),vParL(ii):vParR(ii))  = &
-                        f_rzvv(R_L(ii),Z_L(ii),vPerL(ii):vPerR(ii),vParL(ii):vParR(ii)) &
+                    f_rzvv(R_index(ii),Z_index(ii),iL:iR,jL:jR)  = &
+                        f_rzvv(R_index(ii),Z_index(ii),iL:iR,jL:jR) &
                         + dtArray(ii) / tau &
-                        * f_vv_update(vPerL(ii):vPerR(ii),vParL(ii):vParR(ii)) 
-
+                        * f_vv_update(iL:iR,jL:jR) 
                 endif 
 
                 end do 
@@ -708,30 +767,6 @@ contains
                     write(*,*) 'vPar_nBins = 128'
                     stop
                 endif
-
-                !   Loop only over a few cells around the particle location, 
-                !   otherwise this is prohibitavely slow. Its already a factor
-                !   of 10 slower than using the delta functions above :-(
-    
-                vPerL = int(vPer_index)-nGV
-                where (vPerL < 1) vPerL = 1
-                vPerR  = int(vPer_index)+nGV
-                where (vPerR > vPer_nBins) vPerR = vPer_nBins
-     
-                vParL = int(vPar_index)-nGV
-                where (vParL < 1) vParL = 1
-                vParR  = int(vPar_index)+nGV
-                where (vParR > vPar_nBins) vParR = vPar_nBins
-     
-                R_L = int(R_index)-nGX
-                where (R_L < 1) R_L = 1
-                R_R  = int(R_index)+nGX
-                where (R_R > R_nBins) R_R = R_nBins
-
-                Z_L = int(z_index)-nGX
-                where (Z_L < 1) Z_L = 1
-                Z_R  = int(z_index)+nGX
-                where (Z_R > z_nBins) Z_R = z_nBins
 
                 !   Calculate normFac for full particle size,
                 !   No bessel function required here since the
@@ -751,15 +786,25 @@ contains
    
                 f_rzvv_update = 0.0
 
-                do m=R_L(ii),R_R(ii)
-                do n=Z_L(ii),Z_R(ii)
-                do i=vPerL(ii),vPerR(ii)
-                do j=vParL(ii),vParR(ii)
+                iL = max(floor(vPer_index(ii))-nGV,1)
+                iR = min(floor(vPer_index(ii))+nGV,vPer_nBins)
+                jL = max(floor(vPar_index(ii))-nGV,1)
+                jR = min(floor(vPar_index(ii))+nGV,vPar_nBins)
 
-                    m_ = m-R_L(1)+1
-                    n_ = n-Z_L(1)+1
-                    i_ = i-vPerL(1)+1
-                    j_ = j-vParL(1)+1
+                mL = max(floor(r_index(ii))-nGX,1)
+                mR = min(floor(r_index(ii))+nGX,r_nBins)
+                nL = max(floor(z_index(ii))-nGX,1)
+                nR = min(floor(z_index(ii))+nGX,z_nBins)
+ 
+                do m=mL,mR
+                do n=nL,nR
+                do i=iL,iR
+                do j=jL,jR
+
+                    m_ = m-mL+1
+                    n_ = n-nL+1
+                    i_ = i-iL+1
+                    j_ = j-jL+1
 
                     !   If we end up with Infinity type nonsense poping up
                     !   in the distribution function I would suggest
@@ -841,11 +886,10 @@ contains
 
                     f_rzvv_update = f_rzvv_update / normFac * weightMod
 
-                    f_rzvv(R_L(ii):R_R(ii),Z_L(ii):Z_R(ii),vPerL(ii):vPerR(ii),vParL(ii):vParR(ii))  = &
-                        f_rzvv(R_L(ii):R_R(ii),Z_L(ii):Z_R(ii),vPerL(ii):vPerR(ii),vParL(ii):vParR(ii)) &
+                    f_rzvv(mL:mR,nL:nR,iL:iR,jL:jR)  = &
+                        f_rzvv(mL:mR,nL:nR,iL:iR,jL:jR) &
                         + dtArray(ii) / tau &
                         * f_rzvv_update(1:m_,1:n_,1:i_,1:j_) 
-
                 endif 
 
                 end do 

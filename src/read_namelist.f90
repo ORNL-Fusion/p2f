@@ -6,6 +6,7 @@ module read_namelist
 
 implicit none
 integer :: MaxSteps = 10000
+logical :: useBesselFunction = .true. ! use or not the bessel function representation in velocity space, i.e., do it in 2D rather than 3D
 integer, parameter :: LONG = selected_int_kind(9)
 integer(kind=LONG) :: nP = 1000 !< Number of particles to use.
 real :: particleSize = 10.0e-04 !< Gaussian particle size in \%c. 
@@ -37,6 +38,7 @@ real :: energyThreshold = 0.0 !< [keV] lower energy limit of particles not to in
 namelist / P2FIN / nP,&
     gParticle, &
     gParticle4D, &
+    useBesselFunction, &
     particleSize, &
     particleSizeX, &
     pl_fileName, &
