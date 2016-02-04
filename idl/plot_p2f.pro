@@ -778,7 +778,7 @@ set_plot, 'X'
 	nRPlot	= 6
 	nLevs	= 10 
     base = 2
-    maxLevel = 1e-5
+    maxLevel = 1e-3
 	levels	= (base^fIndGen(nLevs))/((base*1d0)^nLevs)*maxLevel 
 	colors	= reverse ( bytScl ( fIndGen(nLevs), top = 253 ) + 1 ) 
 	nRpts	= n_elements(f_rzvv[*,0,0,0])

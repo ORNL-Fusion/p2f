@@ -9,7 +9,7 @@ integer :: MaxSteps = 10000
 logical :: useBesselFunction = .true. ! use or not the bessel function representation in velocity space, i.e., do it in 2D rather than 3D
 integer, parameter :: LONG = selected_int_kind(9)
 integer(kind=LONG) :: nP = 1000 !< Number of particles to use.
-real :: particleSize = 10.0e-04 !< Gaussian particle size in \%c. 
+real :: particleSize_keV = 0.1
 real :: particleSizeX = 0.01 !< Gaussian particle size in m. 
 logical :: gParticle = .false. !< Use gaussian particle shape or not.
 logical :: gParticle4D = .false. !< Use gaussian particle shape or not.
@@ -39,7 +39,7 @@ namelist / P2FIN / nP,&
     gParticle, &
     gParticle4D, &
     useBesselFunction, &
-    particleSize, &
+    particleSize_keV, &
     particleSizeX, &
     pl_fileName, &
     eqdsk_fileName, &

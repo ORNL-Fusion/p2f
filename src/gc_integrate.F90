@@ -1,6 +1,23 @@
 module gc_integrate
 
 contains
+
+    function GetVSigma ()
+        use constants, only: mi, e_
+        use read_namelist, only: particleSize_keV
+
+        implicit none
+
+        real :: GetVSigma 
+        real :: kT_joule, vTh
+
+        kT_joule = particleSize_keV * 1d3 * e_
+        vTh = sqrt ( 3.0*kT_joule / mi )
+
+        GetVSigma = vTh
+        
+    end function GetVSigma
+
     function dlg_gc_velocity ( pos, vPer, vPar, NFO )
         use gc_terms
         use interp
@@ -119,45 +136,94 @@ contains
         implicit none
 
         real :: GetNormFac
-        real(kind=dbl) :: f_vv_update(vPer_nBins,vPar_nBins)
-        real(kind=dbl) :: dV(vPer_nBins,vPar_nBins), dV_, this_dV, this_f
+        real(kind=dbl) :: this_dV, this_f
         integer :: i,j,m,n
         real :: RCenter, ZCenter, NormFacCheck
+        real :: TotalNumberOfParticlesCheck1, TotalNumberOfParticlesCheck2
+        integer :: vPer2_nBins, vPar2_nBins 
+        real :: vPer2_range, vPar2_range
+        real :: vPer2_binSize, vPar2_binSize
+        real, allocatable :: vPer2_binEdges (:), vPar2_binEdges (: )
+        real, allocatable :: vPer2_binCenters (:), vPar2_binCenters (: )
 
         ! Calculate the normalization factor of a particle 
 
         normFac_ = 0.0
+        TotalNumberOfParticlesCheck1 = 0.0
+        TotalNumberOfParticlesCheck2 = 0.0
+
+        ! Setup a velocity grid at double the resolution to check
+        ! if that impacts the results.
+
+        vPer2_nBins = 2 * vPer_nBins
+        vPar2_nBins = 2 * vPar_nBins
+
+        allocate ( vPer2_binEdges ( vPer2_nBins + 1 ), &
+                   vPar2_binEdges ( vPar2_nBins + 1 ), &
+                   vPer2_binCenters ( vPer2_nBins ), &
+                   vPar2_binCenters ( vPar2_nBins ) )
+ 
+        vPer2_range = vPerInRange / 100.0 * c 
+        vPer2_binSize   = vPer2_range / vPer2_nBins
+        vPer2_binEdges   = (/ (i*vPer2_binSize,i=0,vPer2_nBins) /)
+        vPer2_binCenters    = vPer2_binEdges(1:vPer2_nBins) &
+            + vPer2_binSize / 2.0
+
+        vPar2_range  = vParInRange / 100.0 * c
+        vPar2_binSize    = 2.0 * vPar2_range / vPar2_nBins
+        vPar2_binEdges   = (/ (i*vPar2_binSize,i=0,vPar2_nBins) /) - vPar2_range
+        vPar2_binCenters = vPar2_binEdges(1:vPar2_nBins) + vPar2_binSize / 2.0 
 
         if(gParticle)then
     
-            v_sigma = particleSize * c
+            v_sigma = GetVSigma()
  
             !   Calculate normFac for full particle size,
             !   No bessel function required here since the
             !   vPer offset = 0, i.e., besselI(0,0,)=1.0
   
-            f_vv_update = 0.0 
             do i=1,vPer_nBins
                 do j=1,vPar_nBins
                 
-                    f_vv_update(i,j) =  exp ( &
+                    this_f =  exp ( &
                             - ( vPer_binCenters(i)**2  &
                             + vPar_binCenters(j)**2 ) &
                             / ( 2d0 * v_sigma**2 ) &
                             ) * 2d0 * pi  
                             
-                    dV(i,j) = vPer_binCenters(i) * &
+                    this_dV = vPer_binCenters(i) * &
                         4.0 * pi**2 * R_binSize * z_binSize * &
                         vPer_binSize * vPar_binSize  
+
+                    normFac_ = normFac_ + this_f*this_dV
+
+                    TotalNumberOfParticlesCheck1 = TotalNumberOfParticlesCheck1 + this_f * this_dV 
+
+                end do
+            end do
+
+            do i=1,vPer2_nBins
+                do j=1,vPar2_nBins
+                
+                    this_f =  exp ( &
+                            - ( vPer2_binCenters(i)**2  &
+                            + vPar2_binCenters(j)**2 ) &
+                            / ( 2d0 * v_sigma**2 ) &
+                            ) * 2d0 * pi  
+                            
+                    this_dV = vPer2_binCenters(i) * &
+                        4.0 * pi**2 * R_binSize * z_binSize * &
+                        vPer2_binSize * vPar2_binSize  
+
+                    TotalNumberOfParticlesCheck2 = TotalNumberOfParticlesCheck2 + this_f * this_dV 
+
                 end do
             end do
             
-            normFac_ = sum ( f_vv_update * dV )  
-
         else if(gParticle4D)then
     
             x_sigma = particleSizeX
-            v_sigma = particleSize * c
+            v_sigma = GetVSigma()
  
             do m=1,r_nBins
             do n=1,z_nBins
@@ -177,6 +243,8 @@ contains
 
                 normFac_ = normFac_ + this_f*this_dV
 
+                TotalNumberOfParticlesCheck1 = TotalNumberOfParticlesCheck1 + this_f * this_dV
+
             enddo
             enddo
             enddo
@@ -191,34 +259,34 @@ contains
 
         if(gParticle)then
     
-            v_sigma = particleSize * c
+            v_sigma = GetVSigma()
  
             !   Calculate normFac for full particle size,
             !   No bessel function required here since the
             !   vPer offset = 0, i.e., besselI(0,0,)=1.0
   
-            f_vv_update = 0.0 
             do i=1,min(nGV+1,vPer_nBins)
                 do j=max(vPar_nBins/2-nGV,1),min(vPar_nBins/2+nGV,vPar_nBins)
                 
-                    f_vv_update(i,j) =  exp ( &
+                    this_f =  exp ( &
                             - ( vPer_binCenters(i)**2  &
                             + vPar_binCenters(j)**2 ) &
                             / ( 2d0 * v_sigma**2 ) &
                             ) * 2d0 * pi  
                             
-                    dV(i,j) = vPer_binCenters(i) * &
+                    this_dV = vPer_binCenters(i) * &
                         4.0 * pi**2 * R_binSize * z_binSize * &
                         vPer_binSize * vPar_binSize  
+
+                    normFacCheck = normFacCheck + this_f*this_dV
+
                 end do
             end do
             
-            normFacCheck = sum ( f_vv_update * dV )  
-
         else if(gParticle4D)then
     
             x_sigma = particleSizeX
-            v_sigma = particleSize * c
+            v_sigma = GetVSigma()
  
             do m=max(r_nBins/2-nGX,1),min(r_nBins/2+nGX,r_nBins)
             do n=max(z_nBins/2-nGX,1),min(z_nBins/2+nGX,z_nBins)
@@ -248,10 +316,17 @@ contains
         if(mpi_pId==0)then
             write(*,*) 'NormFacCheck / NormFac_ : ', NormFacCheck / NormFac_
             if(NormFacCheck/NormFac_<0.98)then
-                write(*,*) 'Problem : You need a larger nGridPtsGaussian*Space'
+                write(*,*) 'PROBLEM : You need a larger nGridPtsGaussian*Space'
             endif
         endif
 
+        if(mpi_pId==0)then
+            write(*,*) 'TotalNumberOfParticlesCheck1 / TotalNumberOfParticlesCheck2 : ', &
+                TotalNumberOfParticlesCheck1 / TotalNumberOfParticlesCheck2 
+            if(abs(1-TotalNumberOfParticlesCheck1 / TotalNumberOfParticlesCheck2)>0.01)then
+                write(*,*) 'PROBLEM : You need more points in velocity space '
+            endif
+        endif
 
     end subroutine SetNormFac
 
